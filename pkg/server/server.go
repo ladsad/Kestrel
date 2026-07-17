@@ -5,9 +5,11 @@ import (
 	"io"
 	"log"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 
+	"github.com/ladsad/kestrel/pkg/aof"
 	"github.com/ladsad/kestrel/pkg/resp"
 	"github.com/ladsad/kestrel/pkg/store"
 )
@@ -15,12 +17,14 @@ import (
 type Server struct {
 	port  int
 	store *store.Store
+	aof   *aof.AOF
 }
 
-func New(port int, st *store.Store) *Server {
+func New(port int, st *store.Store, a *aof.AOF) *Server {
 	return &Server{
 		port:  port,
 		store: st,
+		aof:   a,
 	}
 }
 
@@ -41,6 +45,39 @@ func (s *Server) Start() error {
 		}
 		go s.handleConnection(conn)
 	}
+}
+
+func (s *Server) Rotate(snapshotPath string) error {
+	if s.aof == nil {
+		return nil
+	}
+
+	// 1. Lock AOF to block new writes from executing
+	s.aof.LockForRotation()
+	defer s.aof.UnlockForRotation()
+
+	// 2. Lock Store to drain and pause any currently executing writes
+	s.store.Pause()
+	defer s.store.Resume()
+
+	// 3. Take snapshot
+	file, err := os.Create(snapshotPath + ".tmp")
+	if err != nil {
+		return err
+	}
+
+	if err := s.store.SnapshotNoLock(file); err != nil {
+		file.Close()
+		return err
+	}
+	file.Close() // Explicit close before rename!
+
+	if err := os.Rename(snapshotPath+".tmp", snapshotPath); err != nil {
+		return err
+	}
+
+	// 4. Clear AOF
+	return s.aof.Clear()
 }
 
 func (s *Server) handleConnection(conn net.Conn) {
@@ -70,11 +107,29 @@ func (s *Server) handleConnection(conn net.Conn) {
 		cmd := strings.ToUpper(string(val.Array[0].Bulk))
 		args := val.Array[1:]
 
-		s.executeCommand(cmd, args, writer)
+		s.ExecuteCommand(cmd, args, writer)
 	}
 }
 
-func (s *Server) executeCommand(cmd string, args []resp.Value, writer *resp.Writer) {
+func (s *Server) ExecuteCommand(cmd string, args []resp.Value, writer *resp.Writer) {
+	var isWrite bool
+	switch cmd {
+	case "SET", "DEL", "HSET", "LPUSH", "RPUSH", "LPOP", "RPOP", "SADD", "ZADD":
+		isWrite = true
+	}
+
+	if isWrite && s.aof != nil {
+		// Reconstruct the full command for AOF
+		fullCmd := make([]resp.Value, 0, len(args)+1)
+		fullCmd = append(fullCmd, resp.NewBulkString([]byte(cmd)))
+		fullCmd = append(fullCmd, args...)
+		
+		if err := s.aof.Write(fullCmd); err != nil {
+			writer.Write(resp.NewError(fmt.Sprintf("ERR AOF write failed: %v", err)))
+			return
+		}
+	}
+
 	switch cmd {
 	case "PING":
 		if len(args) == 0 {

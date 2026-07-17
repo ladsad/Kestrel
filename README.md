@@ -10,13 +10,11 @@ Most "build your own Redis" projects stop at a single-node command interpreter. 
 
 ## Planned Features
 
-- [ ] RESP2 protocol, interoperable with `redis-cli`
-- [ ] In-memory data structures: strings, hashes, lists, sets, sorted sets
-- [ ] Write-ahead durability (AOF) + periodic snapshotting, crash-safe
-- [ ] Leader-follower replication with queryable replication lag
-- [ ] Raft-based consensus and automatic leader failover
-- [ ] Prometheus metrics + benchmark harness
-- [ ] (Stretch) Consistent-hash sharding across multiple Raft groups
+- [x] Phase 1: Single-Node Server (In-memory data structures, RESP2 protocol)
+- [x] Phase 2: Durability (AOF + Snapshotting)
+- [ ] Phase 3: Replication (Leader-follower streaming)
+- [ ] Phase 4: Consensus & Failover (Raft-based)
+- [ ] Phase 5: Sharding (Consistent hashing)
 
 ## Quick Start
 

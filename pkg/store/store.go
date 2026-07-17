@@ -16,6 +16,14 @@ func New() *Store {
 	}
 }
 
+func (s *Store) Pause() {
+	s.mu.Lock()
+}
+
+func (s *Store) Resume() {
+	s.mu.Unlock()
+}
+
 func (s *Store) Del(key string) int {
 	s.mu.Lock()
 	defer s.mu.Unlock()

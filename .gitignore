@@ -5,6 +5,10 @@
 *.so
 *.dylib
 
+# Data files
+*.aof
+*.rdb
+
 # Test binary, built with `go test -c`
 *.test
 

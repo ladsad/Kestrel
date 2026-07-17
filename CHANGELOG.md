@@ -11,10 +11,21 @@ All notable changes to this project are documented here. Format follows [Keep a 
 ### Benchmarked
 - Single-node throughput: ~247k ops/sec with 50 concurrent connections (see docs/BENCHMARKS.md)
 
+## [0.2.0] - 2026-07-17
+### Added
+- Append-Only File (AOF) durability with configurable fsync policies (`always`, `everysec`, `no`).
+- Write-ahead logging integration intercepting mutable state commands.
+- Periodic store snapshotting (RDB equivalent) via Go `encoding/gob`.
+- Startup recovery logic implementing snapshot loading followed by AOF replay.
+- Atomic AOF file rotation without blocking incoming read commands.
+
+### Benchmarked
+- AOF replay time: ~367k ops in ~318ms.
+
 ## [Unreleased]
 
 ### Planned
-- Phase 2: Durability (AOF and Snapshotting)
+- Phase 3: Replication (Leader-follower streaming)
 
 ---
 
