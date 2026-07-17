@@ -2,13 +2,19 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project does not yet follow semantic versioning tags since it's pre-implementation — versioning starts at `v0.1.0` when Phase 1 ships.
 
+## [0.1.0] - 2026-07-17
+### Added
+- RESP2 protocol parser/serializer
+- In-memory string, hash, list, set, sorted-set commands
+- Single-node concurrent connection handling
+
+### Benchmarked
+- Single-node throughput: ~247k ops/sec with 50 concurrent connections (see docs/BENCHMARKS.md)
+
 ## [Unreleased]
 
-### Added
-- Initial project documentation: design doc, protocol reference, roadmap, testing strategy, benchmark plan, contributing guide.
-
 ### Planned
-- Phase 1: RESP2 server with core commands (see [`docs/ROADMAP.md`](docs/ROADMAP.md))
+- Phase 2: Durability (AOF and Snapshotting)
 
 ---
 

@@ -4,6 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"log"
+
+	"github.com/ladsad/kestrel/pkg/server"
+	"github.com/ladsad/kestrel/pkg/store"
 )
 
 func main() {
@@ -11,6 +14,11 @@ func main() {
 	flag.Parse()
 
 	fmt.Printf("Starting Kestrel on port %d...\n", *port)
-	// TODO: Initialize TCP listener, command dispatcher, and store (Phase 1)
-	log.Println("Server shutting down.")
+	
+	st := store.New()
+	srv := server.New(*port, st)
+
+	if err := srv.Start(); err != nil {
+		log.Fatalf("Server failed to start: %v", err)
+	}
 }

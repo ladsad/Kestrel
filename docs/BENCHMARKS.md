@@ -29,7 +29,7 @@ _(Populated as each phase ships — this section stays empty in the pre-implemen
 
 | Date | Commit | Concurrency | Ops/sec | p50 | p95 | p99 |
 |---|---|---|---|---|---|---|
-| _pending_ | | | | | | |
+| 2026-07-17 | _uncommitted_ | 50 | 246,958 | - | - | - |
 
 ### Phase 4 — Failover
 
