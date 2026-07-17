@@ -24,6 +24,6 @@ These rules are derived from the project's design and contributing guidelines. T
 - **Concurrency**: Write concurrent-client stress tests (N goroutines hammering the same keys).
 
 ## 5. Documentation and Process
-- **Commit Messages**: Use conventional commits (e.g., `feat(protocol): add ZRANGE`, `fix(aof): correct fsync`).
+- **Commit Messages**: Use conventional commits (e.g., `feat(protocol): add ZRANGE`, `fix(aof): correct fsync`). **All modified files need to be committed with proper messaging, every time work is done.**
 - **Updates**: When adding commands or altering behavior, update `docs/PROTOCOL.md`.
 - **Changelog**: Update `CHANGELOG.md` under `[Unreleased]` for notable changes.
