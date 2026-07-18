@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/ladsad/kestrel/pkg/aof"
+	"github.com/ladsad/kestrel/pkg/repl"
 	"github.com/ladsad/kestrel/pkg/resp"
 	"github.com/ladsad/kestrel/pkg/server"
 	"github.com/ladsad/kestrel/pkg/store"
@@ -19,6 +20,7 @@ func main() {
 	fsyncPolicy := flag.String("fsync", "everysec", "Fsync policy: always, everysec, no")
 	aofFile := flag.String("aof-file", "appendonly.aof", "Path to the AOF file")
 	snapshotFile := flag.String("snapshot-file", "snapshot.rdb", "Path to the snapshot file")
+	replicaOf := flag.String("replicaof", "", "Address of the leader (e.g. localhost:6380) to replicate from")
 	flag.Parse()
 
 	policy := aof.FsyncPolicy(*fsyncPolicy)
@@ -47,12 +49,12 @@ func main() {
 
 	log.Printf("Replaying AOF from %s...", *aofFile)
 	startReplay := time.Now()
-	
+
 	// Temporarily bypass Server and execute directly on store during replay
 	dummyWriter := resp.NewWriter(io.Discard)
 	// We need an execute command function to replay. Since executeCommand is inside Server,
 	// let's create a temporary Server just for execution, without AOF so it doesn't log during replay
-	replaySrv := server.New(*port, st, nil)
+	replaySrv := server.New(*port, st, nil, nil)
 
 	var ops int
 	err = a.Replay(func(cmd string, args []resp.Value) {
@@ -65,8 +67,14 @@ func main() {
 		log.Printf("AOF replayed %d ops in %v", ops, time.Since(startReplay))
 	}
 
-	// 3. Start Server
-	srv := server.New(*port, st, a)
+	// 3. Setup Replication
+	var leader *repl.Leader
+	if *replicaOf == "" {
+		leader = repl.NewLeader(st)
+	}
+
+	// 4. Start Server
+	srv := server.New(*port, st, a, leader)
 
 	// 4. Background Rotation (Snapshot + AOF Clear)
 	go func() {
@@ -83,6 +91,15 @@ func main() {
 	}()
 
 	fmt.Printf("Starting Kestrel on port %d with fsync=%s...\n", *port, *fsyncPolicy)
+
+	if *replicaOf != "" {
+		log.Printf("Starting in REPLICA mode, tracking leader at %s", *replicaOf)
+		replica := repl.NewReplica(*replicaOf, st, func(cmd string, args []resp.Value) {
+			srv.ExecuteCommand(cmd, args, dummyWriter)
+		})
+		replica.Start()
+	}
+
 	if err := srv.Start(); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}

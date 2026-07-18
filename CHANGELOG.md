@@ -22,10 +22,20 @@ All notable changes to this project are documented here. Format follows [Keep a 
 ### Benchmarked
 - AOF replay time: ~367k ops in ~318ms.
 
+## [0.3.0] - 2026-07-18
+### Added
+- Leader-follower streaming replication.
+- Follower node initialization via `--replicaof` flag.
+- Atomic state synchronization via initial snapshot (`SYNC` command) followed by asynchronous, non-blocking command stream.
+- `INFO replication` command to query leader offset.
+
+### Benchmarked
+- 3-node cluster throughput: ~168k ops/sec (writes on leader, reads on follower).
+
 ## [Unreleased]
 
 ### Planned
-- Phase 3: Replication (Leader-follower streaming)
+- Phase 4: Consensus & Failover (Raft-based)
 - Phase 6: Live Terminal Dashboard (TUI) and Observability
 - Head-to-head performance comparison benchmark against Redis
 

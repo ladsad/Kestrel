@@ -39,7 +39,7 @@ func TestStore_Lists(t *testing.T) {
 	s := New()
 	s.LPush("lkey", []string{"a", "b"}) // list is b, a
 	s.RPush("lkey", []string{"c", "d"}) // list is b, a, c, d
-	
+
 	val, ok := s.LPop("lkey")
 	if !ok || val != "b" {
 		t.Errorf("Expected b, got %v", val)
@@ -70,7 +70,7 @@ func TestStore_ZSets(t *testing.T) {
 	s.ZAdd("zkey", 2.0, "b")
 	s.ZAdd("zkey", 1.0, "a")
 	s.ZAdd("zkey", 3.0, "c")
-	
+
 	rangeVals := s.ZRange("zkey", 0, -1)
 	if len(rangeVals) != 3 || rangeVals[0] != "a" || rangeVals[1] != "b" || rangeVals[2] != "c" {
 		t.Errorf("Expected [a b c], got %v", rangeVals)
@@ -80,7 +80,7 @@ func TestStore_ZSets(t *testing.T) {
 func TestStore_Concurrency(t *testing.T) {
 	s := New()
 	var wg sync.WaitGroup
-	
+
 	// Concurrent writes
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
@@ -89,9 +89,9 @@ func TestStore_Concurrency(t *testing.T) {
 			s.Set("key"+strconv.Itoa(n), strconv.Itoa(n))
 		}(i)
 	}
-	
+
 	wg.Wait()
-	
+
 	// Concurrent reads
 	for i := 0; i < 100; i++ {
 		wg.Add(1)

@@ -115,7 +115,7 @@ func (s *Store) LPush(key string, values []string) int {
 	if !ok {
 		return 0 // Wrong type
 	}
-	
+
 	// Prepend
 	for _, v := range values {
 		list = append([]string{v}, list...)
@@ -276,7 +276,7 @@ func (s *Store) ZRange(key string, start, stop int) []string {
 		}
 		return members[i].Score < members[j].Score
 	})
-	
+
 	length := len(members)
 	if start < 0 {
 		start = length + start
@@ -293,7 +293,7 @@ func (s *Store) ZRange(key string, start, stop int) []string {
 	if start > stop || start >= length {
 		return nil
 	}
-	
+
 	var res []string
 	for i := start; i <= stop; i++ {
 		res = append(res, members[i].Member)

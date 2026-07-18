@@ -10,21 +10,24 @@ import (
 	"strings"
 
 	"github.com/ladsad/kestrel/pkg/aof"
+	"github.com/ladsad/kestrel/pkg/repl"
 	"github.com/ladsad/kestrel/pkg/resp"
 	"github.com/ladsad/kestrel/pkg/store"
 )
 
 type Server struct {
-	port  int
-	store *store.Store
-	aof   *aof.AOF
+	port   int
+	store  *store.Store
+	aof    *aof.AOF
+	leader *repl.Leader
 }
 
-func New(port int, st *store.Store, a *aof.AOF) *Server {
+func New(port int, st *store.Store, a *aof.AOF, leader *repl.Leader) *Server {
 	return &Server{
-		port:  port,
-		store: st,
-		aof:   a,
+		port:   port,
+		store:  st,
+		aof:    a,
+		leader: leader,
 	}
 }
 
@@ -107,7 +110,26 @@ func (s *Server) handleConnection(conn net.Conn) {
 		cmd := strings.ToUpper(string(val.Array[0].Bulk))
 		args := val.Array[1:]
 
+		if cmd == "SYNC" {
+			if s.leader != nil {
+				if err := s.leader.HandleSync(conn, writer); err != nil {
+					log.Printf("SYNC failed: %v", err)
+					writer.Write(resp.NewError(fmt.Sprintf("ERR SYNC failed: %v", err)))
+				}
+				// The connection is now a replica. We keep reading to detect disconnection.
+				// Any further commands from replica are ignored until EOF.
+				continue
+			} else {
+				writer.Write(resp.NewError("ERR not configured as leader"))
+				continue
+			}
+		}
+
 		s.ExecuteCommand(cmd, args, writer)
+	}
+
+	if s.leader != nil {
+		s.leader.RemoveReplica(conn)
 	}
 }
 
@@ -123,11 +145,17 @@ func (s *Server) ExecuteCommand(cmd string, args []resp.Value, writer *resp.Writ
 		fullCmd := make([]resp.Value, 0, len(args)+1)
 		fullCmd = append(fullCmd, resp.NewBulkString([]byte(cmd)))
 		fullCmd = append(fullCmd, args...)
-		
+
 		if err := s.aof.Write(fullCmd); err != nil {
-			writer.Write(resp.NewError(fmt.Sprintf("ERR AOF write failed: %v", err)))
+			if writer != nil {
+				writer.Write(resp.NewError(fmt.Sprintf("ERR AOF write failed: %v", err)))
+			}
 			return
 		}
+	}
+
+	if isWrite && s.leader != nil {
+		s.leader.ReplicateWrite(cmd, args)
 	}
 
 	switch cmd {
@@ -327,6 +355,19 @@ func (s *Server) ExecuteCommand(cmd string, args []resp.Value, writer *resp.Writ
 				}
 				writer.Write(resp.NewArray(arr))
 			}
+		}
+	case "INFO":
+		if len(args) > 0 && strings.ToUpper(string(args[0].Bulk)) == "REPLICATION" {
+			var info string
+			if s.leader != nil {
+				info += "role:leader\r\n"
+				info += fmt.Sprintf("master_repl_offset:%d\r\n", s.leader.Offset)
+			} else {
+				info += "role:replica\r\n" // actually we don't have a replica object inside server... wait, replica tracks its own offset. Let's just say we don't know replica offset here unless we inject it.
+			}
+			writer.Write(resp.NewBulkString([]byte(info)))
+		} else {
+			writer.Write(resp.NewBulkString([]byte("# Server\r\nkestrel_version:0.3.0\r\n")))
 		}
 	case "COMMAND":
 		writer.Write(resp.NewSimpleString("OK"))

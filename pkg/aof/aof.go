@@ -108,12 +108,12 @@ func (a *AOF) Close() error {
 func (a *AOF) Replay(callback func(string, []resp.Value)) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	
+
 	_, err := a.file.Seek(0, 0)
 	if err != nil {
 		return err
 	}
-	
+
 	reader := resp.NewReader(a.file)
 	for {
 		val, err := reader.Read()
@@ -123,13 +123,13 @@ func (a *AOF) Replay(callback func(string, []resp.Value)) error {
 		if err != nil {
 			return fmt.Errorf("aof replay error: %v", err)
 		}
-		
+
 		if val.Type == resp.TypeArray && len(val.Array) > 0 {
 			cmd := string(val.Array[0].Bulk)
 			callback(cmd, val.Array[1:])
 		}
 	}
-	
+
 	_, err = a.file.Seek(0, 2)
 	return err
 }

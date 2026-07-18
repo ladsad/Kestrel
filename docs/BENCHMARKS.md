@@ -38,6 +38,13 @@ _(Populated as each phase ships — this section stays empty in the pre-implemen
 | 2026-07-17 | _uncommitted_ | Replay 367k writes | ~318 ms |
 | 2026-07-17 | _uncommitted_ | fsync=everysec Ops/sec | 243,735 |
 
+### Phase 3 — Replication
+
+| Date | Commit | Metric | Value |
+|---|---|---|---|
+| 2026-07-18 | _uncommitted_ | 3-node cluster throughput | 168,505 ops/sec |
+| 2026-07-18 | _uncommitted_ | Replication lag | ~1-5ms (local) |
+
 ### Phase 4 — Failover
 
 | Date | Commit | Trials | Time-to-new-leader (avg) | Time-to-writes-resumed (avg) |
