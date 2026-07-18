@@ -22,6 +22,7 @@ Testing approach per layer, and what "done" means for each. The goal is that eve
 - Deterministic simulation where feasible: an in-process test harness that can inject network partitions and message delays between simulated nodes.
 - Manual chaos scripts for real-process testing: `scripts/chaos/kill-leader.sh`, `scripts/chaos/partition-network.sh` — documented, repeatable, and run before every milestone sign-off.
 - Explicit test: kill leader mid-write-stream, verify no committed entry is lost and no uncommitted entry is exposed to reads.
+- **Visual Validation:** During manual chaos test runs, the TUI dashboard (from Phase 6) should be attached to visually confirm failover dynamics and replication lag in real time. It serves as an active validation tool, not just a cosmetic add-on.
 
 ## Performance
 - Benchmark suite (see [`BENCHMARKS.md`](BENCHMARKS.md)) run before and after every phase.

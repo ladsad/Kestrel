@@ -15,6 +15,12 @@ Most "build your own Redis" projects stop at a single-node command interpreter. 
 - [ ] Phase 3: Replication (Leader-follower streaming)
 - [ ] Phase 4: Consensus & Failover (Raft-based)
 - [ ] Phase 5: Sharding (Consistent hashing)
+- [ ] Phase 6: Observability & Live Dashboard
+
+## Live Dashboard
+
+<!-- TODO: Add GIF/screenshot of the TUI during a simulated leader failure here once implemented -->
+![Live Dashboard Placeholder](https://via.placeholder.com/800x400.png?text=Live+Dashboard+Demo+-+Coming+Soon)
 
 ## Quick Start
 
@@ -28,6 +34,9 @@ go run ./cmd/kestrel --port 6380
 redis-cli -p 6380
 > SET foo bar
 > GET foo
+
+# once Phase 6 lands, run the live cluster dashboard:
+go run ./cmd/kestrel-dashboard --peers localhost:6380,localhost:6381,localhost:6382
 ```
 
 ## Documentation

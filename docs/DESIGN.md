@@ -40,12 +40,12 @@ This project closes that gap directly and produces defensible, benchmarked claim
 ## 5. System Overview
 
 ```
-                         ┌─────────────────────┐
-                         │   Client (redis-cli   │
-                         │   or Go test client)  │
-                         └──────────┬────────────┘
-                                    │ RESP2 over TCP
-                                    ▼
+                         ┌─────────────────────┐       ┌───────────────────────┐
+                         │   Client (redis-cli │       │  Live Dashboard (TUI) │
+                         │   or Go test client)│       │  (external observer)  │
+                         └──────────┬──────────┘       └───────────┬───────────┘
+                                    │ RESP2 over TCP               │ Metrics / RPC
+                                    ▼                              ▼
                     ┌───────────────────────────────┐
                     │         Kestrel Node            │
                     │  ┌─────────────────────────┐    │
@@ -128,8 +128,15 @@ This project closes that gap directly and produces defensible, benchmarked claim
 - Thin stateless routing layer in front so a client doesn't need cluster topology awareness.
 - Explicitly scoped as: attempt only after Phases 1–4 are complete, tested, and benchmarked.
 
-### Phase 6 — Observability & Benchmarking
+### Phase 6 — Observability & Live Dashboard
 
+- **Live Terminal Dashboard (TUI):** A command-line dashboard built with Go's `bubbletea` (and `lipgloss` for styling) that visualizes the cluster's consensus and replication state in real time.
+  - Renders current leader, term number, and term-change history.
+  - Visualizes per-node role (leader/follower/candidate) with live state transitions.
+  - Tracks replication lag per follower, updating in real time.
+  - Displays ops/sec and p99 latency live.
+  - Shows a visual "election in progress" state when triggered.
+- **Design Note (TUI Decoupling):** The dashboard reads its data without adding load-bearing coupling to the core server. It connects to the Prometheus `/metrics` endpoint and/or a lightweight internal status RPC on each node (the same surface an external monitor would use), avoiding reaching into internal server state directly.
 - Prometheus `/metrics` endpoint: ops/sec by command type, p50/p95/p99 latency histograms, replication lag, Raft term/leader changes, AOF fsync latency.
 - Load-testing harness (custom Go client, concurrent connections, configurable read/write mix — a small "YCSB-lite") to produce reproducible throughput/latency numbers.
 - Grafana dashboard (optional, reuses Prometheus setup already used in Confoundr — direct resume synergy).
