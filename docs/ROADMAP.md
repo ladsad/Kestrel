@@ -42,7 +42,7 @@ Each phase has a hard **exit criteria** — the next phase does not start until 
 - Prometheus `/metrics`: ops/sec by command, latency histograms, replication lag, Raft term/leader changes
 - Custom Go load-testing harness ("YCSB-lite")
 - Grafana dashboard (reuses the Prometheus/Grafana pattern from Confoundr)
-- **Exit criteria:** Running a 3-node cluster with the TUI attached, a manual leader kill is visually observable in the dashboard within the measured failover window from docs/BENCHMARKS.md.
+- **Exit criteria:** Running a 3-node cluster with the TUI attached, a manual leader kill is visually observable in the dashboard within the measured failover window from docs/BENCHMARKS.md. Comparison matrix in docs/BENCHMARKS.md is fully populated with results from both systems under identical, documented conditions.
 
 ## Explicitly Deferred (Future Work)
 - From-scratch Raft implementation (replacing the library) as a post-M4 deep dive

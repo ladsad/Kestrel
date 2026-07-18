@@ -16,6 +16,7 @@ Most "build your own Redis" projects stop at a single-node command interpreter. 
 - [ ] Phase 4: Consensus & Failover (Raft-based)
 - [ ] Phase 5: Sharding (Consistent hashing)
 - [ ] Phase 6: Observability & Live Dashboard
+- [ ] Comparative Benchmark vs. Redis
 
 ## Live Dashboard
 
@@ -47,7 +48,7 @@ go run ./cmd/kestrel-dashboard --peers localhost:6380,localhost:6381,localhost:6
 | [`docs/PROTOCOL.md`](docs/PROTOCOL.md) | Wire protocol and command reference |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Milestones, phases, and exit criteria |
 | [`docs/TESTING.md`](docs/TESTING.md) | Test strategy across layers |
-| [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) | Benchmark methodology and results |
+| [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) | Benchmark methodology and results, including a head-to-head comparison against Redis |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Dev setup and contribution guidelines |
 | [`CHANGELOG.md`](CHANGELOG.md) | Notable changes per release |
 

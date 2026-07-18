@@ -27,6 +27,7 @@ All notable changes to this project are documented here. Format follows [Keep a 
 ### Planned
 - Phase 3: Replication (Leader-follower streaming)
 - Phase 6: Live Terminal Dashboard (TUI) and Observability
+- Head-to-head performance comparison benchmark against Redis
 
 ---
 
