@@ -32,10 +32,21 @@ All notable changes to this project are documented here. Format follows [Keep a 
 ### Benchmarked
 - 3-node cluster throughput: ~168k ops/sec (writes on leader, reads on follower).
 
+## [0.4.0] - 2026-07-19
+### Added
+- Integrated `hashicorp/raft` for robust consensus, leader election, and distributed log replication.
+- Dynamic cluster configuration via the new `RAFTJOIN` custom command.
+- Integrated `raft-boltdb` for durable log and stable configuration storage.
+- Automated snapshotting managed internally by the Raft FSM, replacing the custom AOF rotation logic.
+- Dedicated `cmd/failover-bench` to test and measure leader election failover time.
+
+### Benchmarked
+- Measured leader election failover time and write resumption at ~1.5s (dictated by 1000ms election timeout).
+
 ## [Unreleased]
 
 ### Planned
-- Phase 4: Consensus & Failover (Raft-based)
+- Phase 5: Sharding (Consistent hashing)
 - Phase 6: Live Terminal Dashboard (TUI) and Observability
 - Head-to-head performance comparison benchmark against Redis
 

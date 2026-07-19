@@ -49,7 +49,7 @@ _(Populated as each phase ships — this section stays empty in the pre-implemen
 
 | Date | Commit | Trials | Time-to-new-leader (avg) | Time-to-writes-resumed (avg) |
 |---|---|---|---|---|
-| _pending_ | | | | |
+| 2026-07-19 | _uncommitted_ | 10 | ~1.5s | ~1.5s |
 
 ## Kestrel vs. Redis
 

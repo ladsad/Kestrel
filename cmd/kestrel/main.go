@@ -3,13 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io"
 	"log"
-	"os"
-	"time"
+	"path/filepath"
 
-	"github.com/ladsad/kestrel/pkg/aof"
-	"github.com/ladsad/kestrel/pkg/repl"
+	"github.com/hashicorp/raft"
+	"github.com/ladsad/kestrel/pkg/consensus"
+	"github.com/ladsad/kestrel/pkg/raftfsm"
 	"github.com/ladsad/kestrel/pkg/resp"
 	"github.com/ladsad/kestrel/pkg/server"
 	"github.com/ladsad/kestrel/pkg/store"
@@ -17,89 +16,47 @@ import (
 
 func main() {
 	port := flag.Int("port", 6380, "Port to run Kestrel server on")
-	fsyncPolicy := flag.String("fsync", "everysec", "Fsync policy: always, everysec, no")
-	aofFile := flag.String("aof-file", "appendonly.aof", "Path to the AOF file")
-	snapshotFile := flag.String("snapshot-file", "snapshot.rdb", "Path to the snapshot file")
-	replicaOf := flag.String("replicaof", "", "Address of the leader (e.g. localhost:6380) to replicate from")
+	nodeID := flag.String("node-id", "node1", "Unique Raft Node ID")
+	raftBind := flag.String("raft-bind", "127.0.0.1:7380", "Address to bind Raft on")
+	dataDir := flag.String("data-dir", "data", "Directory to store Raft data")
+	bootstrap := flag.Bool("bootstrap", false, "Bootstrap a new cluster")
 	flag.Parse()
 
-	policy := aof.FsyncPolicy(*fsyncPolicy)
-	if policy != aof.FsyncAlways && policy != aof.FsyncEverySec && policy != aof.FsyncNo {
-		log.Fatalf("Invalid fsync policy: %s", *fsyncPolicy)
-	}
-
+	// 1. Initialize Store
 	st := store.New()
 
-	// 1. Recovery: Load Snapshot
-	if file, err := os.Open(*snapshotFile); err == nil {
-		log.Printf("Loading snapshot from %s...", *snapshotFile)
-		if err := st.LoadSnapshot(file); err != nil {
-			log.Printf("Error loading snapshot: %v", err)
-		}
-		file.Close()
+	// 2. We need an Execute callback for FSM that avoids writing to network
+	// We'll create the server first with a dummy raft pointer, then set it
+	srv := server.New(*port, st, nil)
+	
+	fsmExec := func(cmd string, args []resp.Value) interface{} {
+		return srv.ApplyCommand(cmd, args)
 	}
+	fsm := raftfsm.NewStoreFSM(st, fsmExec)
 
-	// 2. Recovery: Replay AOF
-	// We instantiate the AOF instance to do this
-	a, err := aof.NewAOF(*aofFile, policy)
+	// 3. Initialize Raft
+	r, err := consensus.SetupRaft(filepath.Join(*dataDir, *nodeID), *nodeID, *raftBind, fsm)
 	if err != nil {
-		log.Fatalf("Failed to initialize AOF: %v", err)
-	}
-	defer a.Close()
-
-	log.Printf("Replaying AOF from %s...", *aofFile)
-	startReplay := time.Now()
-
-	// Temporarily bypass Server and execute directly on store during replay
-	dummyWriter := resp.NewWriter(io.Discard)
-	// We need an execute command function to replay. Since executeCommand is inside Server,
-	// let's create a temporary Server just for execution, without AOF so it doesn't log during replay
-	replaySrv := server.New(*port, st, nil, nil)
-
-	var ops int
-	err = a.Replay(func(cmd string, args []resp.Value) {
-		ops++
-		replaySrv.ExecuteCommand(cmd, args, dummyWriter)
-	})
-	if err != nil {
-		log.Printf("AOF replay encountered error: %v (recovered %d ops)", err, ops)
-	} else {
-		log.Printf("AOF replayed %d ops in %v", ops, time.Since(startReplay))
+		log.Fatalf("Failed to initialize Raft: %v", err)
 	}
 
-	// 3. Setup Replication
-	var leader *repl.Leader
-	if *replicaOf == "" {
-		leader = repl.NewLeader(st)
-	}
+	// 4. Update Server with Raft
+	srv = server.New(*port, st, r)
 
-	// 4. Start Server
-	srv := server.New(*port, st, a, leader)
-
-	// 4. Background Rotation (Snapshot + AOF Clear)
-	go func() {
-		ticker := time.NewTicker(10 * time.Second)
-		defer ticker.Stop()
-		for range ticker.C {
-			log.Printf("Taking background snapshot and rotating AOF...")
-			if err := srv.Rotate(*snapshotFile); err != nil {
-				log.Printf("Rotation failed: %v", err)
-			} else {
-				log.Printf("Rotation successful")
-			}
+	if *bootstrap {
+		configuration := raft.Configuration{
+			Servers: []raft.Server{
+				{
+					ID:      raft.ServerID(*nodeID),
+					Address: raft.ServerAddress(*raftBind),
+				},
+			},
 		}
-	}()
-
-	fmt.Printf("Starting Kestrel on port %d with fsync=%s...\n", *port, *fsyncPolicy)
-
-	if *replicaOf != "" {
-		log.Printf("Starting in REPLICA mode, tracking leader at %s", *replicaOf)
-		replica := repl.NewReplica(*replicaOf, st, func(cmd string, args []resp.Value) {
-			srv.ExecuteCommand(cmd, args, dummyWriter)
-		})
-		replica.Start()
+		r.BootstrapCluster(configuration)
+		log.Printf("Bootstrapped Raft cluster as %s at %s", *nodeID, *raftBind)
 	}
 
+	fmt.Printf("Starting Kestrel on port %d with Raft Node ID %s...\n", *port, *nodeID)
 	if err := srv.Start(); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}

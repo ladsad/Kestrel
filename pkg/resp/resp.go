@@ -67,6 +67,11 @@ func (w *Writer) Write(v Value) error {
 	return err
 }
 
+func (w *Writer) WriteRaw(b []byte) error {
+	_, err := w.writer.Write(b)
+	return err
+}
+
 func (v Value) Marshal() []byte {
 	switch v.Type {
 	case TypeSimpleString:
