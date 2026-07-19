@@ -15,6 +15,8 @@ We developed a real-time terminal UI using the `bubbletea` framework. It polls t
 go run ./cmd/kestrel-dashboard --peers 127.0.0.1:6380,127.0.0.1:6381,127.0.0.1:6382
 ```
 
+![TUI Failover Dashboard](assets/tui_dashboard.webp)
+
 ## 2. Prometheus & Grafana Stack
 
 Kestrel integrates `prometheus/client_golang` natively to expose a `/metrics` HTTP endpoint. The provided Docker Compose stack instantly spins up a connected Prometheus and Grafana instance.
@@ -32,3 +34,5 @@ cd observability
 docker-compose up -d
 ```
 Then navigate to `http://localhost:3000` (default login: admin/admin) and click on the "Kestrel Cluster Metrics" dashboard under the Dashboards tab.
+
+![Grafana Cluster Metrics Dashboard](assets/grafana_dashboard.webp)
