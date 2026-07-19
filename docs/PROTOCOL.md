@@ -59,4 +59,15 @@ Internal, not client-facing. A follower opens a dedicated TCP connection to the 
 
 ## Raft RPCs (Phase 4+)
 
-Standard Raft RPCs (`RequestVote`, `AppendEntries`) via `hashicorp/raft`'s transport layer. This section will be filled in with the concrete network transport choice (raw TCP vs. gRPC) and any Kestrel-specific state-machine `Apply()` semantics once Phase 4 begins — see [`DESIGN.md §6 Phase 4`](DESIGN.md#phase-4--consensus--failover-raft).
+## Cluster Management (Phase 4+)
+
+| Command | Args | Returns | Notes |
+|---|---|---|---|
+| `RAFTJOIN` | `node-id bind-address` | `+OK` | Dynamically adds a new voter node to the Raft cluster |
+
+### MOVED Redirects (Phase 5+)
+
+If a client (or proxy) issues a write command directly to a follower node, the node will refuse the write and instead return a standard Redis-cluster style redirect error:
+`-MOVED <leader_address>\r\n`
+
+The `kestrel-proxy` automatically intercepts this error and seamlessly redirects the connection to the correct leader address on behalf of the client.

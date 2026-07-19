@@ -24,6 +24,10 @@ Testing approach per layer, and what "done" means for each. The goal is that eve
 - Explicit test: kill leader mid-write-stream, verify no committed entry is lost and no uncommitted entry is exposed to reads.
 - **Visual Validation:** During manual chaos test runs, the TUI dashboard (from Phase 6) should be attached to visually confirm failover dynamics and replication lag in real time. It serves as an active validation tool, not just a cosmetic add-on.
 
+## Sharding (Phase 5)
+- E2E Integration Script: `cmd/sharding-test` stands up multiple isolated Raft clusters (shards) and the stateless router proxy.
+- **Verification:** Fire N keys through the proxy; shut down the proxy; connect directly to backend shards to cryptographically/heuristically verify keys were distributed evenly, confirming the proxy's consistent hash ring and `-MOVED` redirection behavior.
+
 ## Performance
 - Benchmark suite (see [`BENCHMARKS.md`](BENCHMARKS.md)) run before and after every phase.
 - Results are checked into the repo as historical record — regressions are visible in the git history, not just anecdotal.
