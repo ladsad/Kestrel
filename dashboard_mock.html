@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kestrel Live Dashboard</title>
+    <style>
+        body {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 20px;
+        }
+        .title {
+            display: inline-block;
+            background-color: #7D56F4;
+            color: #FAFAFA;
+            font-weight: bold;
+            padding: 2px 10px;
+            margin-bottom: 20px;
+        }
+        .last-updated {
+            margin-bottom: 20px;
+        }
+        .nodes-container {
+            display: flex;
+            gap: 20px;
+        }
+        .node {
+            border: 1px solid #3C3C3C;
+            border-radius: 5px;
+            padding: 10px 20px;
+            min-width: 200px;
+        }
+        .node.leader {
+            border-color: #04B575;
+        }
+        .node.dead {
+            border-color: #FF0000;
+        }
+        .node.candidate {
+            border-color: #F2C94C;
+        }
+        .status-leader { color: #04B575; }
+        .status-dead { color: #FF0000; font-weight: bold; }
+        .status-candidate { color: #F2C94C; }
+        .line { margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <div class="title"> Kestrel Live Dashboard </div>
+    <div class="last-updated" id="time">Last Updated: 15:04:05 (Press 'q' to quit)</div>
+
+    <div class="nodes-container" id="nodes">
+        <!-- Nodes injected here -->
+    </div>
+
+    <script>
+        const nodesContainer = document.getElementById('nodes');
+        const timeEl = document.getElementById('time');
+
+        let term = 2;
+        let index = 1045;
+        let applied = 1045;
+        
+        const state1 = [
+            { addr: "127.0.0.1:6380", role: "Leader", alive: true, latency: "1.2ms" },
+            { addr: "127.0.0.1:6381", role: "Follower", alive: true, latency: "0.8ms" },
+            { addr: "127.0.0.1:6382", role: "Follower", alive: true, latency: "0.9ms" }
+        ];
+
+        const state2 = [
+            { addr: "127.0.0.1:6380", role: "DEAD", alive: false, latency: "timeout" },
+            { addr: "127.0.0.1:6381", role: "Candidate", alive: true, latency: "1.1ms" },
+            { addr: "127.0.0.1:6382", role: "Follower", alive: true, latency: "0.9ms" }
+        ];
+
+        const state3 = [
+            { addr: "127.0.0.1:6380", role: "DEAD", alive: false, latency: "timeout" },
+            { addr: "127.0.0.1:6381", role: "Leader", alive: true, latency: "0.6ms" },
+            { addr: "127.0.0.1:6382", role: "Follower", alive: true, latency: "0.8ms" }
+        ];
+
+        const states = [state1, state1, state1, state2, state2, state3, state3, state3, state3, state3];
+        let currentState = 0;
+
+        function renderNode(node) {
+            let cssClass = "node";
+            let roleHtml = "";
+            
+            if (!node.alive) {
+                cssClass += " dead";
+                roleHtml = `<div class="line"><span class="status-dead">Status: DEAD</span></div>`;
+            } else if (node.role === "Leader") {
+                cssClass += " leader";
+                roleHtml = `<div class="line"><span class="status-leader">Role: Leader</span></div>`;
+            } else if (node.role === "Candidate") {
+                cssClass += " candidate";
+                roleHtml = `<div class="line"><span class="status-candidate">Role: Candidate</span></div>`;
+            } else {
+                roleHtml = `<div class="line">Role: Follower</div>`;
+            }
+
+            return `
+                <div class="${cssClass}">
+                    <div class="line">Node: ${node.addr}</div>
+                    ${roleHtml}
+                    ${node.alive ? `<div class="line">Term: ${term}</div>
+                    <div class="line">Log Index: ${index}</div>
+                    <div class="line">Applied: ${applied}</div>` : ''}
+                    <div class="line">Latency: ${node.latency}</div>
+                </div>
+            `;
+        }
+
+        function update() {
+            const now = new Date();
+            timeEl.innerText = `Last Updated: ${now.toLocaleTimeString()} (Press 'q' to quit)`;
+            
+            const state = states[currentState % states.length];
+            
+            if (currentState === 3) term = 3; // Election starts
+            if (state[0].alive) index += Math.floor(Math.random() * 5); // Simulating traffic
+            applied = index;
+
+            nodesContainer.innerHTML = state.map(renderNode).join('');
+            currentState++;
+        }
+
+        setInterval(update, 1000);
+        update();
+    </script>
+</body>
+</html>

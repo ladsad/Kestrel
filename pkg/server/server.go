@@ -331,14 +331,17 @@ func (s *Server) executeCommandInternal(cmd string, args []resp.Value, writer *r
 		if len(args) > 0 && strings.ToUpper(string(args[0].Bulk)) == "REPLICATION" {
 			var info string
 			if s.raft != nil {
+				stats := s.raft.Stats()
 				info += fmt.Sprintf("role:%v\r\n", s.raft.State())
-				info += fmt.Sprintf("term:%s\r\n", s.raft.Stats()["term"])
+				info += fmt.Sprintf("term:%s\r\n", stats["term"])
+				info += fmt.Sprintf("last_log_index:%s\r\n", stats["last_log_index"])
+				info += fmt.Sprintf("applied_index:%s\r\n", stats["applied_index"])
 			} else {
 				info += "role:standalone\r\n"
 			}
 			writer.Write(resp.NewBulkString([]byte(info)))
 		} else {
-			writer.Write(resp.NewBulkString([]byte("# Server\r\nkestrel_version:0.4.0\r\n")))
+			writer.Write(resp.NewBulkString([]byte("# Server\r\nkestrel_version:0.5.0\r\n")))
 		}
 	case "RAFTJOIN":
 		if len(args) != 2 {
