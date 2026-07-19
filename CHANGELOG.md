@@ -43,10 +43,16 @@ All notable changes to this project are documented here. Format follows [Keep a 
 ### Benchmarked
 - Measured leader election failover time and write resumption at ~1.5s (dictated by 1000ms election timeout).
 
+## [0.5.0] - 2026-07-19
+### Added
+- Consistent hash ring (`pkg/sharding/hashring.go`) using `hash/fnv` with configurable virtual nodes for cluster key distribution.
+- Modified core server Raft loop to return a precise `-MOVED <leader_address>` redirect error instead of a generic "not leader" error on write commands.
+- Standalone stateless router proxy (`cmd/kestrel-proxy`) that transparently intercepts client TCP traffic, hashes keys, routes traffic to the correct shard, and automatically catches `-MOVED` redirects to find new leaders natively.
+- Dedicated `cmd/sharding-test` benchmarking integration to test dynamic multi-shard distribution.
+
 ## [Unreleased]
 
 ### Planned
-- Phase 5: Sharding (Consistent hashing)
 - Phase 6: Live Terminal Dashboard (TUI) and Observability
 - Head-to-head performance comparison benchmark against Redis
 

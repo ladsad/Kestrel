@@ -97,7 +97,12 @@ func (s *Server) ExecuteCommand(cmd string, args []resp.Value, writer *resp.Writ
 
 	if isWrite && s.raft != nil {
 		if s.raft.State() != raft.Leader {
-			writer.Write(resp.NewError("ERR not leader"))
+			leaderAddr, _ := s.raft.LeaderWithID()
+			if leaderAddr != "" {
+				writer.Write(resp.NewError(fmt.Sprintf("MOVED %s", leaderAddr)))
+			} else {
+				writer.Write(resp.NewError("ERR not leader and leader unknown"))
+			}
 			return
 		}
 

@@ -14,7 +14,7 @@ Most "build your own Redis" projects stop at a single-node command interpreter. 
 - [x] Phase 2: Durability (AOF + Snapshotting)
 - [x] Phase 3: Replication (Leader-follower streaming)
 - [x] Phase 4: Consensus & Failover (Raft-based)
-- [ ] Phase 5: Sharding (Consistent hashing)
+- [x] Phase 5: Sharding (Consistent hashing)
 - [ ] Phase 6: Observability & Live Dashboard
 - [ ] Comparative Benchmark vs. Redis
 
