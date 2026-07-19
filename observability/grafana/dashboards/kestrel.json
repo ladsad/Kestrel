@@ -1,0 +1,50 @@
+{
+  "title": "Kestrel Cluster Metrics",
+  "panels": [
+    {
+      "title": "Throughput (ops/sec)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "rate(kestrel_commands_total[1m])",
+          "legendFormat": "{{command}}"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
+    },
+    {
+      "title": "p99 Latency (seconds)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, rate(kestrel_command_duration_seconds_bucket[1m]))",
+          "legendFormat": "{{command}}"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
+    },
+    {
+      "title": "Raft State (1=Leader, 0=Follower)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "kestrel_raft_state",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 }
+    },
+    {
+      "title": "Raft Term",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "kestrel_raft_term",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 }
+    }
+  ],
+  "schemaVersion": 36
+}
