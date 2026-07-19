@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project does not yet follow semantic versioning tags since it's pre-implementation — versioning starts at `v0.1.0` when Phase 1 ships.
 
+## [0.6.0] - 2026-07-19
+### Added
+- Completed Phase 6: Observability & Live Dashboard
+- **Live Terminal Dashboard (TUI)**: Added a dynamic command-line interface (`cmd/kestrel-dashboard`) using `bubbletea` and `lipgloss` to visualize Raft consensus states (Leader/Follower/Candidate) and track replication lag (`last_log_index` / `applied_index`) in real time across the cluster.
+- **Prometheus Metrics**: Integrated `prometheus/client_golang` directly into `pkg/server/server.go` and exposed a dedicated `/metrics` endpoint.
+- **Grafana Stack**: Added a `docker-compose` stack in `observability/` pre-configured to scrape Kestrel instances and provisioned a default Kestrel Cluster Metrics dashboard tracking ops/sec (`kestrel_commands_total`) and latencies (`kestrel_command_duration_seconds`).
+- Documented testing methodology and recorded failure simulations validating the dashboards in `docs/OBSERVABILITY.md`.
+
 ## [0.1.0] - 2026-07-17
 ### Added
 - RESP2 protocol parser/serializer

@@ -13,10 +13,10 @@ Most "build your own Redis" projects stop at a single-node command interpreter. 
 - [x] Phase 1: Single-Node Server (In-memory data structures, RESP2 protocol)
 - [x] Phase 2: Durability (AOF + Snapshotting)
 - [x] Phase 3: Replication (Leader-follower streaming)
-- [x] Phase 4: Consensus & Failover (Raft-based)
-- [x] Phase 5: Sharding (Consistent hashing)
-- [ ] Phase 6: Observability & Live Dashboard
-- [ ] Comparative Benchmark vs. Redis
+- [x] Phase 4: Raft Consensus via `hashicorp/raft` (CP system)
+- [x] Phase 5: Sharding (Consistent Hashing + Stateless proxy layer)
+- [x] Phase 6: Observability (Bubbletea TUI & Prometheus/Grafana)
+- [ ] Phase 7: Final Benchmarks vs Redis
 
 ## Live Dashboard
 

@@ -38,11 +38,11 @@ Each phase has a hard **exit criteria** — the next phase does not start until 
 - Stateless routing layer, no client-side topology awareness required
 - **Exit criteria:** Spin up at least 2 independent Shards; route 100+ commands through a stateless proxy; directly verify keys are evenly distributed across backend shards without client topology awareness.
 
-## Phase 6 — Observability & Live Dashboard (Ongoing, folded into every phase)
-- **Live Terminal Dashboard (TUI):** Real-time cluster visualization (`bubbletea`/`lipgloss`).
-- Prometheus `/metrics`: ops/sec by command, latency histograms, replication lag, Raft term/leader changes
-- Custom Go load-testing harness ("YCSB-lite")
-- Grafana dashboard (reuses the Prometheus/Grafana pattern from Confoundr)
+## Phase 6: Observability & Live Dashboard (COMPLETED)
+- [x] Create a Live Terminal Dashboard (TUI) using `bubbletea`.
+- [x] Implement Prometheus `/metrics` endpoint (ops/sec, latency, Raft term).
+- [x] Configure Grafana dashboard matching the Confoundr stack.
+- [x] Custom Go load-testing harness ("YCSB-lite").
 - **Exit criteria:** Running a 3-node cluster with the TUI attached, a manual leader kill is visually observable in the dashboard within the measured failover window from docs/BENCHMARKS.md. Comparison matrix in docs/BENCHMARKS.md is fully populated with results from both systems under identical, documented conditions.
 
 ## Explicitly Deferred (Future Work)
