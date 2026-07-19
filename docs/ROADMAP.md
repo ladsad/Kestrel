@@ -36,6 +36,7 @@ Each phase has a hard **exit criteria** — the next phase does not start until 
 **Target: Week 12+, only after Phase 4 ships**
 - Consistent hashing across independent Raft groups
 - Stateless routing layer, no client-side topology awareness required
+- **Exit criteria:** Spin up at least 2 independent Shards; route 100+ commands through a stateless proxy; directly verify keys are evenly distributed across backend shards without client topology awareness.
 
 ## Phase 6 — Observability & Live Dashboard (Ongoing, folded into every phase)
 - **Live Terminal Dashboard (TUI):** Real-time cluster visualization (`bubbletea`/`lipgloss`).

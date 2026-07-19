@@ -20,6 +20,7 @@ This doc exists so every performance claim on the resume or README traces back t
 | 4 | Time-to-new-leader after simulated leader kill | seconds, over 10 trials |
 | 4 | Time-to-writes-resumed after leader kill | seconds, over 10 trials |
 | 4 | Cluster throughput during an election (degradation window) | ops/sec over time, graphed |
+| 5 | Key distribution accuracy across shards | keys per shard, % deviation |
 
 ## Results
 
@@ -50,6 +51,12 @@ _(Populated as each phase ships — this section stays empty in the pre-implemen
 | Date | Commit | Trials | Time-to-new-leader (avg) | Time-to-writes-resumed (avg) |
 |---|---|---|---|---|
 | 2026-07-19 | 3d1923f | 10 | ~1.5s | ~1.5s |
+
+### Phase 5 — Sharding
+
+| Date | Commit | Keys Distributed | Shard 0 Keys | Shard 1 Keys | Deviation |
+|---|---|---|---|---|---|
+| 2026-07-19 | 8a631e3 | 100 | ~50 | ~50 | Tested directly |
 
 ## Kestrel vs. Redis
 
