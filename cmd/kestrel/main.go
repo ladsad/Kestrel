@@ -4,7 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"path/filepath"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/hashicorp/raft"
 	"github.com/ladsad/kestrel/pkg/consensus"
@@ -20,6 +23,7 @@ func main() {
 	raftBind := flag.String("raft-bind", "127.0.0.1:7380", "Address to bind Raft on")
 	dataDir := flag.String("data-dir", "data", "Directory to store Raft data")
 	bootstrap := flag.Bool("bootstrap", false, "Bootstrap a new cluster")
+	metricsPort := flag.Int("metrics-port", 9090, "Port to expose Prometheus metrics")
 	flag.Parse()
 
 	// 1. Initialize Store
@@ -54,6 +58,17 @@ func main() {
 		}
 		r.BootstrapCluster(configuration)
 		log.Printf("Bootstrapped Raft cluster as %s at %s", *nodeID, *raftBind)
+	}
+
+	// 5. Start Prometheus metrics server
+	if *metricsPort > 0 {
+		go func() {
+			http.Handle("/metrics", promhttp.Handler())
+			log.Printf("Starting Prometheus metrics server on :%d", *metricsPort)
+			if err := http.ListenAndServe(fmt.Sprintf(":%d", *metricsPort), nil); err != nil {
+				log.Fatalf("Metrics server failed: %v", err)
+			}
+		}()
 	}
 
 	fmt.Printf("Starting Kestrel on port %d with Raft Node ID %s...\n", *port, *nodeID)

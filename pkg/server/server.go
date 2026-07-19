@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/raft"
+	"github.com/ladsad/kestrel/pkg/metrics"
 	"github.com/ladsad/kestrel/pkg/resp"
 	"github.com/ladsad/kestrel/pkg/store"
 )
@@ -89,6 +90,9 @@ func (s *Server) ApplyCommand(cmd string, args []resp.Value) []byte {
 }
 
 func (s *Server) ExecuteCommand(cmd string, args []resp.Value, writer *resp.Writer) {
+	start := time.Now()
+	defer metrics.RecordCommand(cmd, start)
+
 	var isWrite bool
 	switch cmd {
 	case "SET", "DEL", "HSET", "LPUSH", "RPUSH", "LPOP", "RPOP", "SADD", "ZADD":
@@ -332,6 +336,7 @@ func (s *Server) executeCommandInternal(cmd string, args []resp.Value, writer *r
 			var info string
 			if s.raft != nil {
 				stats := s.raft.Stats()
+				metrics.UpdateRaftStats(stats)
 				info += fmt.Sprintf("role:%v\r\n", s.raft.State())
 				info += fmt.Sprintf("term:%s\r\n", stats["term"])
 				info += fmt.Sprintf("last_log_index:%s\r\n", stats["last_log_index"])
