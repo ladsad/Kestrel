@@ -29,27 +29,27 @@ _(Populated as each phase ships — this section stays empty in the pre-implemen
 
 | Date | Commit | Concurrency | Ops/sec | p50 | p95 | p99 |
 |---|---|---|---|---|---|---|
-| 2026-07-17 | _uncommitted_ | 50 | 246,958 | - | - | - |
+| 2026-07-17 | 22347c9 | 50 | 246,958 | - | - | - |
 
 ### Phase 2 — Durability
 
 | Date | Commit | Metric | Value |
 |---|---|---|---|
-| 2026-07-17 | _uncommitted_ | Replay 367k writes | ~318 ms |
-| 2026-07-17 | _uncommitted_ | fsync=everysec Ops/sec | 243,735 |
+| 2026-07-17 | 2b56755 | Replay 367k writes | ~318 ms |
+| 2026-07-17 | 2b56755 | fsync=everysec Ops/sec | 243,735 |
 
 ### Phase 3 — Replication
 
 | Date | Commit | Metric | Value |
 |---|---|---|---|
-| 2026-07-18 | _uncommitted_ | 3-node cluster throughput | 168,505 ops/sec |
-| 2026-07-18 | _uncommitted_ | Replication lag | ~1-5ms (local) |
+| 2026-07-18 | e2f59be | 3-node cluster throughput | 168,505 ops/sec |
+| 2026-07-18 | e2f59be | Replication lag | ~1-5ms (local) |
 
 ### Phase 4 — Failover
 
 | Date | Commit | Trials | Time-to-new-leader (avg) | Time-to-writes-resumed (avg) |
 |---|---|---|---|---|
-| 2026-07-19 | _uncommitted_ | 10 | ~1.5s | ~1.5s |
+| 2026-07-19 | 3d1923f | 10 | ~1.5s | ~1.5s |
 
 ## Kestrel vs. Redis
 
