@@ -29,34 +29,38 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 
 	fmt.Printf("Connected to %s\n", addr)
-	
+
 	for {
 		fmt.Printf("%s> ", addr)
 		if !scanner.Scan() {
 			break
 		}
-		
+
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
 			continue
 		}
-		
+
 		parts := strings.Fields(line)
 		args := make([]resp.Value, len(parts))
 		for i, part := range parts {
 			args[i] = resp.NewBulkString([]byte(part))
 		}
-		
+
 		if err := writer.Write(resp.NewArray(args)); err != nil {
 			log.Fatalf("Write error: %v", err)
 		}
-		
+
 		val, err := reader.Read()
 		if err != nil {
 			log.Fatalf("Read error: %v", err)
 		}
-		
+
 		printValue(val)
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatalf("Input scanner error: %v", err)
 	}
 }
 
