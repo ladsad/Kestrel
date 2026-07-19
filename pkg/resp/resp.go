@@ -75,16 +75,16 @@ func (w *Writer) WriteRaw(b []byte) error {
 func (v Value) Marshal() []byte {
 	switch v.Type {
 	case TypeSimpleString:
-		return []byte(fmt.Sprintf("+%s\r\n", v.Str))
+		return fmt.Appendf(nil, "+%s\r\n", v.Str)
 	case TypeError:
-		return []byte(fmt.Sprintf("-%s\r\n", v.Str))
+		return fmt.Appendf(nil, "-%s\r\n", v.Str)
 	case TypeInteger:
-		return []byte(fmt.Sprintf(":%d\r\n", v.Num))
+		return fmt.Appendf(nil, ":%d\r\n", v.Num)
 	case TypeBulkString:
 		if v.IsNull {
 			return []byte("$-1\r\n")
 		}
-		res := []byte(fmt.Sprintf("$%d\r\n", len(v.Bulk)))
+		res := fmt.Appendf(nil, "$%d\r\n", len(v.Bulk))
 		res = append(res, v.Bulk...)
 		res = append(res, '\r', '\n')
 		return res
@@ -92,7 +92,7 @@ func (v Value) Marshal() []byte {
 		if v.IsNull {
 			return []byte("*-1\r\n")
 		}
-		res := []byte(fmt.Sprintf("*%d\r\n", len(v.Array)))
+		res := fmt.Appendf(nil, "*%d\r\n", len(v.Array))
 		for _, item := range v.Array {
 			res = append(res, item.Marshal()...)
 		}
