@@ -1,14 +1,6 @@
 <div align="center">
   <h1>🦅 Kestrel</h1>
   <p><b>A distributed, fault-tolerant key-value store built from scratch in Go.</b></p>
-  
-  <p>
-    <a href="https://golang.org/doc/go1.21"><img src="https://img.shields.io/badge/Go-1.21+-00ADD8?style=for-the-badge&logo=go" alt="Go Version"></a>
-    <a href="https://github.com/ladsad/kestrel/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License"></a>
-    <a href="https://github.com/hashicorp/raft"><img src="https://img.shields.io/badge/Consensus-Raft-red?style=for-the-badge&logo=hashicorp" alt="Raft Consensus"></a>
-    <img src="https://img.shields.io/badge/Status-100%25_Completed-brightgreen?style=for-the-badge" alt="Status Completed">
-  </p>
-</div>
 
 ---
 
@@ -28,33 +20,24 @@
 
 Every performance claim in Kestrel is reproducible via the custom `kestrel-bench` utility. Below is a snapshot of our Phase 7 Head-to-Head benchmarking against a default Redis instance using 50 concurrent connections for 15 seconds.
 
-| Metric | Kestrel | Redis | 
-|---|---|---|
-| **Single-node Throughput** | ~12,904 ops/sec | ~34,427 ops/sec | 
-| **p50 Latency** | ~2.55 ms | ~1.41 ms | 
-| **3-Node Cluster Throughput** | ~11,250 ops/sec | ~31,890 ops/sec | 
-| **Memory Footprint (1M Keys)** | ~808 MB | ~128 MB | 
+| Metric                               | Kestrel         | Redis           |
+| ------------------------------------ | --------------- | --------------- |
+| **Single-node Throughput**     | ~12,904 ops/sec | ~34,427 ops/sec |
+| **p50 Latency**                | ~2.55 ms        | ~1.41 ms        |
+| **3-Node Cluster Throughput**  | ~11,250 ops/sec | ~31,890 ops/sec |
+| **Memory Footprint (1M Keys)** | ~808 MB         | ~128 MB         |
 
-**Why the difference?**  
-Kestrel intentionally trades raw in-memory throughput for strict durability. Every write in Kestrel requires consensus replication and a synchronous write-ahead log append to a memory-mapped BoltDB file. Default Redis operates entirely in memory with asynchronous replication. 
+**Why the difference?**
+Kestrel intentionally trades raw in-memory throughput for strict durability. Every write in Kestrel requires consensus replication and a synchronous write-ahead log append to a memory-mapped BoltDB file. Default Redis operates entirely in memory with asynchronous replication.
 
 *(For a full breakdown of our benchmarking methodology, see [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md))*
-
----
-
-## 📊 Live Cluster Dashboard
-
-Kestrel ships with a beautiful real-time TUI to visualize Raft leader elections, replication lag, and cluster health dynamically.
-
-<div align="center">
-  <img src="docs/assets/tui_dashboard.webp" alt="TUI Failover Dashboard" width="800">
-</div>
 
 ---
 
 ## 🚀 Quick Start
 
 ### 1. Spin up a single node
+
 ```bash
 git clone https://github.com/ladsad/kestrel.git
 cd kestrel
@@ -64,6 +47,7 @@ go run ./cmd/kestrel --port 6380 --bootstrap
 ```
 
 ### 2. Connect via `redis-cli`
+
 ```bash
 # In a new terminal window:
 redis-cli -p 6380
@@ -74,6 +58,7 @@ OK
 ```
 
 ### 3. Spin up the Observability Stack (Optional)
+
 ```bash
 cd observability
 docker-compose up -d
@@ -87,16 +72,16 @@ docker-compose up -d
 
 Our documentation is structured to explain not just *how* Kestrel works, but *why* specific architectural decisions were made.
 
-| Document | Contents |
-|---|---|
-| [**`DESIGN.md`**](docs/DESIGN.md) | Full architectural design doc (goals, cluster topology, state machine). |
-| [**`ROADMAP.md`**](docs/ROADMAP.md) | The 7 chronological development phases of Kestrel. |
-| [**`PROTOCOL.md`**](docs/PROTOCOL.md) | The subset of RESP2 commands supported and wire protocol details. |
-| [**`OBSERVABILITY.md`**](docs/OBSERVABILITY.md) | Setup and usage instructions for Grafana and the TUI. |
-| [**`TESTING.md`**](docs/TESTING.md) | Testing strategy across the network, Raft, and storage layers. |
-| [**`BENCHMARKS.md`**](docs/BENCHMARKS.md) | Full methodology and historical performance matrices. |
-| [**`CONTRIBUTING.md`**](CONTRIBUTING.md) | Developer setup and contribution guidelines. |
-| [**`CHANGELOG.md`**](CHANGELOG.md) | Detailed release notes. |
+| Document                                               | Contents                                                                |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- |
+| [**`DESIGN.md`**](docs/DESIGN.md)               | Full architectural design doc (goals, cluster topology, state machine). |
+| [**`ROADMAP.md`**](docs/ROADMAP.md)             | The 7 chronological development phases of Kestrel.                      |
+| [**`PROTOCOL.md`**](docs/PROTOCOL.md)           | The subset of RESP2 commands supported and wire protocol details.       |
+| [**`OBSERVABILITY.md`**](docs/OBSERVABILITY.md) | Setup and usage instructions for Grafana and the TUI.                   |
+| [**`TESTING.md`**](docs/TESTING.md)             | Testing strategy across the network, Raft, and storage layers.          |
+| [**`BENCHMARKS.md`**](docs/BENCHMARKS.md)       | Full methodology and historical performance matrices.                   |
+| [**`CONTRIBUTING.md`**](CONTRIBUTING.md)        | Developer setup and contribution guidelines.                            |
+| [**`CHANGELOG.md`**](CHANGELOG.md)              | Detailed release notes.                                                 |
 
 ## 🚫 Non-Goals
 
