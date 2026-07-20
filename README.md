@@ -16,7 +16,7 @@ Most "build your own Redis" projects stop at a single-node command interpreter. 
 - [x] Phase 4: Raft Consensus via `hashicorp/raft` (CP system)
 - [x] Phase 5: Sharding (Consistent Hashing + Stateless proxy layer)
 - [x] Phase 6: Observability (Bubbletea TUI & Prometheus/Grafana)
-- [ ] Phase 7: Final Benchmarks vs Redis
+- [x] Phase 7: Final Benchmarks vs Redis
 
 ## Live Dashboard
 

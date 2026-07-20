@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"sort"
 	"sync"
 	"time"
 
@@ -28,6 +29,7 @@ func main() {
 	var totalOps int64
 	var totalErrs int64
 	var opsMu sync.Mutex
+	var allLatencies []time.Duration
 
 	startTime := time.Now()
 
@@ -66,15 +68,19 @@ func main() {
 			var ops int64
 			var errs int64
 
+			var latencies []time.Duration
+
 			for {
 				select {
 				case <-timeout:
 					opsMu.Lock()
 					totalOps += ops
 					totalErrs += errs
+					allLatencies = append(allLatencies, latencies...)
 					opsMu.Unlock()
 					return
 				default:
+					startOp := time.Now()
 					err = writerW.Write(resp.NewArray([]resp.Value{
 						resp.NewBulkString([]byte("SET")),
 						resp.NewBulkString([]byte("bench_key")),
@@ -87,7 +93,9 @@ func main() {
 						errs++
 						continue
 					}
+					latencies = append(latencies, time.Since(startOp))
 
+					startOp = time.Now()
 					err = writerR.Write(resp.NewArray([]resp.Value{
 						resp.NewBulkString([]byte("GET")),
 						resp.NewBulkString([]byte("bench_key")),
@@ -99,6 +107,7 @@ func main() {
 						errs++
 						continue
 					}
+					latencies = append(latencies, time.Since(startOp))
 
 					ops += 2
 				}
@@ -110,9 +119,20 @@ func main() {
 	elapsed := time.Since(startTime)
 	opsPerSec := float64(totalOps) / elapsed.Seconds()
 
+	sort.Slice(allLatencies, func(i, j int) bool { return allLatencies[i] < allLatencies[j] })
+	var p50, p95, p99 time.Duration
+	if len(allLatencies) > 0 {
+		p50 = allLatencies[int(float64(len(allLatencies))*0.50)]
+		p95 = allLatencies[int(float64(len(allLatencies))*0.95)]
+		p99 = allLatencies[int(float64(len(allLatencies))*0.99)]
+	}
+
 	fmt.Printf("--- Benchmark Results ---\n")
 	fmt.Printf("Total Ops: %d\n", totalOps)
 	fmt.Printf("Total Errs: %d\n", totalErrs)
 	fmt.Printf("Elapsed: %s\n", elapsed)
 	fmt.Printf("Ops/sec: %.2f\n", opsPerSec)
+	fmt.Printf("p50 Latency: %v\n", p50)
+	fmt.Printf("p95 Latency: %v\n", p95)
+	fmt.Printf("p99 Latency: %v\n", p99)
 }

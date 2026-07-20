@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project does not yet follow semantic versioning tags since it's pre-implementation — versioning starts at `v0.1.0` when Phase 1 ships.
 
+## [1.0.0] - 2026-07-20
+### Added
+- Completed Phase 7: Final Benchmarks vs Redis.
+- Populated `docs/BENCHMARKS.md` with head-to-head comparison metrics (throughput and latency percentiles) between Kestrel and Redis.
+- Added p50, p95, and p99 latency calculations to `cmd/kestrel-bench/main.go`.
+
 ## [0.6.0] - 2026-07-19
 ### Added
 - Completed Phase 6: Observability & Live Dashboard

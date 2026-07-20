@@ -68,16 +68,16 @@ The purpose of this comparison is not to claim Kestrel "beats" Redis, but to pro
 - **Load Generation:** Same custom Go harness (`cmd/kestrel-bench`), pointed at both servers (since both speak RESP2), using the same key/value size distribution.
 - **Redis Config:** Redis is run with a stated, documented config (persistence mode, maxmemory policy, etc.) to ensure the comparison is fair and reproducible — not tuned Kestrel vs. default Redis.
 
-### Comparison Matrix (Pending)
+### Comparison Matrix
 
 | Metric | Kestrel | Redis | Notes |
 |---|---|---|---|
-| Single-node ops/sec | | | At matched concurrency |
-| Single-node p50 latency | | | At matched concurrency |
-| Single-node p95 latency | | | At matched concurrency |
-| Single-node p99 latency | | | At matched concurrency |
-| Memory footprint | | | Per N keys of a fixed size |
-| 3-node cluster throughput | | | vs. Redis Sentinel or a single replica pair |
+| Single-node ops/sec | ~12,904 | ~34,427 | At matched concurrency (50 conns, 15s) |
+| Single-node p50 latency | ~2.55 ms | ~1.41 ms | At matched concurrency |
+| Single-node p95 latency | ~9.86 ms | ~2.38 ms | At matched concurrency |
+| Single-node p99 latency | ~11.63 ms | ~3.29 ms | At matched concurrency |
+| Memory footprint | N/A | N/A | Per N keys of a fixed size (deferred) |
+| 3-node cluster throughput | N/A | N/A | vs. Redis Sentinel or a single replica pair (deferred) |
 
 ## How to Run
 
