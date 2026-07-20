@@ -163,7 +163,7 @@ func (m model) View() string {
 		
 		if !state.IsAlive {
 			nodeStr += errStyle.Render("Status: DEAD") + "\n"
-			nodeStr += fmt.Sprintf("Latency: %v\n", state.Latency)
+			nodeStr += "Latency: N/A\n"
 			views = append(views, deadStyle.Render(nodeStr))
 			continue
 		}
@@ -187,8 +187,16 @@ func (m model) View() string {
 			views = append(views, followerStyle.Render(nodeStr))
 		}
 	}
+	var rows []string
+	for i := 0; i < len(views); i += 4 {
+		end := i + 4
+		if end > len(views) {
+			end = len(views)
+		}
+		rows = append(rows, lipgloss.JoinHorizontal(lipgloss.Top, views[i:end]...))
+	}
 
-	return s + lipgloss.JoinHorizontal(lipgloss.Top, views...) + "\n"
+	return s + lipgloss.JoinVertical(lipgloss.Left, rows...) + "\n"
 }
 
 func main() {
