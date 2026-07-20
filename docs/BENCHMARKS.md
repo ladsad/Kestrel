@@ -76,8 +76,8 @@ The purpose of this comparison is not to claim Kestrel "beats" Redis, but to pro
 | Single-node p50 latency | ~2.55 ms | ~1.41 ms | At matched concurrency |
 | Single-node p95 latency | ~9.86 ms | ~2.38 ms | At matched concurrency |
 | Single-node p99 latency | ~11.63 ms | ~3.29 ms | At matched concurrency |
-| Memory footprint | N/A | N/A | Per N keys of a fixed size (deferred) |
-| 3-node cluster throughput | N/A | N/A | vs. Redis Sentinel or a single replica pair (deferred) |
+| Memory footprint | ~808 MB | ~128 MB | Per 1M keys (16 byte key, 64 byte val). Kestrel includes Raft WAL mmap. |
+| 3-node cluster throughput | ~11,250 | ~31,890 | vs. Redis Master + 2 Replicas |
 
 ## How to Run
 
