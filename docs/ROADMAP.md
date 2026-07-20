@@ -3,7 +3,6 @@
 Each phase has a hard **exit criteria** — the next phase does not start until the current one's is met and its benchmark is committed to [`docs/BENCHMARKS.md`](BENCHMARKS.md). This is intentional: it's the guardrail against scope creep across a 5–6 phase project (see [`DESIGN.md §9 Risks`](DESIGN.md#9-risks--open-questions)).
 
 ## Phase 1 — Single-Node Server
-**Target: Week 2**
 - RESP2 parser/serializer (hand-rolled)
 - In-memory data structures: strings, hashes, lists, sets, sorted sets
 - One goroutine per connection, single `RWMutex` around store state
@@ -11,7 +10,6 @@ Each phase has a hard **exit criteria** — the next phase does not start until 
 - **Exit criteria:** `redis-cli` connects and runs all v1 commands correctly against a live instance.
 
 ## Phase 2 — Durability
-**Target: Week 4**
 - Append-only file (AOF), write-ahead before ack
 - Configurable fsync policy (`always` / `everysec` / `no`)
 - Periodic snapshotting + AOF rotation
@@ -19,30 +17,27 @@ Each phase has a hard **exit criteria** — the next phase does not start until 
 - **Exit criteria:** kill -9 mid-write-burst → restart → zero acknowledged writes lost, replay time measured and recorded.
 
 ## Phase 3 — Replication
-**Target: Week 6**
 - Leader-follower streaming replication
 - Queryable replication offset / lag
 - Follower reads with explicit staleness semantics (documented, not silent)
 - **Exit criteria:** 3-node cluster; write to leader, read from follower; replication lag measured under load.
 
 ## Phase 4 — Consensus & Failover
-**Target: Week 9**
 - Raft leader election + log replication (`hashicorp/raft`, with every RPC/state transition understood and explainable)
 - Configurable election timeout / heartbeat interval
 - Failure injection via `kill -9` and network partition (`tc netem`)
 - **Exit criteria:** kill the leader in a live 3–5 node cluster; measure time-to-new-leader and time-to-writes-resumed; verify zero committed-entry loss.
 
-## Phase 5 — Sharding (Stretch)
-**Target: Week 12+, only after Phase 4 ships**
+## Phase 5 — Sharding
 - Consistent hashing across independent Raft groups
 - Stateless routing layer, no client-side topology awareness required
 - **Exit criteria:** Spin up at least 2 independent Shards; route 100+ commands through a stateless proxy; directly verify keys are evenly distributed across backend shards without client topology awareness.
 
-## Phase 6: Observability & Live Dashboard (COMPLETED)
-- [x] Create a Live Terminal Dashboard (TUI) using `bubbletea`.
-- [x] Implement Prometheus `/metrics` endpoint (ops/sec, latency, Raft term).
-- [x] Configure Grafana dashboard matching the Confoundr stack.
-- [x] Custom Go load-testing harness ("YCSB-lite").
+## Phase 6 — Observability & Live Dashboard
+- Create a Live Terminal Dashboard (TUI) using `bubbletea`.
+- Implement Prometheus `/metrics` endpoint (ops/sec, latency, Raft term).
+- Configure Grafana dashboard matching the Confoundr stack.
+- Custom Go load-testing harness ("YCSB-lite").
 - **Exit criteria:** Running a 3-node cluster with the TUI attached, a manual leader kill is visually observable in the dashboard within the measured failover window from docs/BENCHMARKS.md. Comparison matrix in docs/BENCHMARKS.md is fully populated with results from both systems under identical, documented conditions.
 
 ## Explicitly Deferred (Future Work)

@@ -19,7 +19,7 @@ Requires Go 1.22+.
 - [ ] `go test -race ./...` passes — the race detector is non-negotiable given how much of this project is concurrency-sensitive
 - [ ] New commands/behavior are reflected in [`docs/PROTOCOL.md`](docs/PROTOCOL.md)
 - [ ] Anything affecting a phase's exit criteria includes an updated benchmark in [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md)
-- [ ] `CHANGELOG.md` updated under `[Unreleased]`
+- [ ] `CHANGELOG.md` updated with relevant entries
 
 ## Code Style
 

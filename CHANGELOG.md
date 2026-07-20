@@ -64,23 +64,4 @@ All notable changes to this project are documented here. Format follows [Keep a 
 - Standalone stateless router proxy (`cmd/kestrel-proxy`) that transparently intercepts client TCP traffic, hashes keys, routes traffic to the correct shard, and automatically catches `-MOVED` redirects to find new leaders natively.
 - Dedicated `cmd/sharding-test` benchmarking integration to test dynamic multi-shard distribution.
 
-## [Unreleased]
 
-### Planned
-- Phase 6: Live Terminal Dashboard (TUI) and Observability
-- Head-to-head performance comparison benchmark against Redis
-
----
-
-_Entries below will be added as each phase ships, e.g.:_
-
-```
-## [0.1.0] - YYYY-MM-DD
-### Added
-- RESP2 protocol parser/serializer
-- In-memory string, hash, list, set, sorted-set commands
-- Single-node concurrent connection handling
-
-### Benchmarked
-- Single-node throughput: N ops/sec at p99 < N ms (see docs/BENCHMARKS.md)
-```

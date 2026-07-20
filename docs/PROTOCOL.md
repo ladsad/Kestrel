@@ -55,7 +55,7 @@ Client requests are always sent as an Array of Bulk Strings (this is how real Re
 
 ## Replication Protocol (Phase 3+)
 
-Internal, not client-facing. A follower opens a dedicated TCP connection to the leader and receives a stream of already-committed write commands in AOF order, each tagged with a monotonically increasing **replication offset**. Followers apply entries strictly in order and expose their current offset so lag can be queried and benchmarked. Full RPC framing to be finalized during Phase 3 implementation and documented here once stable.
+Internal, not client-facing. A follower opens a dedicated TCP connection to the leader and receives a stream of already-committed write commands in AOF order, each tagged with a monotonically increasing **replication offset**. Followers apply entries strictly in order and expose their current offset so lag can be queried and benchmarked.
 
 ## Raft RPCs (Phase 4+)
 

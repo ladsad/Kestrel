@@ -8,7 +8,7 @@ This doc exists so every performance claim on the resume or README traces back t
 - Every result records: hardware/VM spec, Go version, Kestrel commit hash, command line used, and raw output — committed under `benchmarks/results/<date>-<phase>.md`.
 - Latency reported as p50 / p95 / p99, not just average — averages hide tail behavior, which is exactly what distributed systems interviews probe on.
 
-## Planned Benchmark Matrix
+## Benchmark Matrix
 
 | Phase | Benchmark | Metric |
 |---|---|---|
@@ -23,8 +23,6 @@ This doc exists so every performance claim on the resume or README traces back t
 | 5 | Key distribution accuracy across shards | keys per shard, % deviation |
 
 ## Results
-
-_(Populated as each phase ships — this section stays empty in the pre-implementation state so the README never overstates progress.)_
 
 ### Phase 1 — Single-Node
 

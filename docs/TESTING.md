@@ -32,7 +32,7 @@ Testing approach per layer, and what "done" means for each. The goal is that eve
 - Benchmark suite (see [`BENCHMARKS.md`](BENCHMARKS.md)) run before and after every phase.
 - Results are checked into the repo as historical record — regressions are visible in the git history, not just anecdotal.
 
-## CI Pipeline (target)
+## CI Pipeline
 1. `go vet` + `staticcheck`
 2. `go test -race ./...`
 3. Benchmark suite (non-blocking, results posted as a PR comment)
