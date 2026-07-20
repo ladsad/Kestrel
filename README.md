@@ -101,4 +101,4 @@ Kestrel does **not** aim for full Redis parity. It purposefully avoids features 
 
 ## 📄 License
 
-MIT — see [`LICENSE`](LICENSE).
+Distributed under the MIT License. See [`LICENSE`](LICENSE) for more information.
