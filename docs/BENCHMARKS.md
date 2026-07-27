@@ -63,7 +63,7 @@ This doc exists so every performance claim on the resume or README traces back t
 
 | Date | Commit | Trials | Time-to-new-leader (avg) | Time-to-writes-resumed (avg) | Failover p99 Latency |
 |---|---|---|---|---|---|
-| 2026-07-27 | HEAD | 10 | ~1.1s | ~1.1s | 1.25s (vs Raft 2.1s) |
+| 2026-07-27 | 33a6740 | 10 | ~1.1s | ~1.1s | 1.25s (vs Raft 2.1s) |
 
 ## Kestrel vs. Redis
 
