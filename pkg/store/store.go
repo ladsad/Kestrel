@@ -130,11 +130,14 @@ func (s *Store) LPush(key string, values []string) int {
 	}
 
 	// Prepend
-	for _, v := range values {
-		list = append([]string{v}, list...)
+	newList := make([]string, len(list)+len(values))
+	for i, v := range values {
+		newList[len(values)-1-i] = v
 	}
-	s.data[key] = list
-	return len(list)
+	copy(newList[len(values):], list)
+
+	s.data[key] = newList
+	return len(newList)
 }
 
 func (s *Store) RPush(key string, values []string) int {
