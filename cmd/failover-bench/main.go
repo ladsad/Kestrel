@@ -37,9 +37,12 @@ func main() {
 
 	// 2. Write data (Cluster joins automatically via static peers in VSR)
 	log.Println("Cluster joined. Writing data...")
-	conn, _ := net.Dial("tcp", "127.0.0.1:6380")
-	w = resp.NewWriter(conn)
-	r = resp.NewReader(conn)
+	conn, err := net.Dial("tcp", "127.0.0.1:6380")
+	if err != nil {
+		log.Fatalf("Failed to connect: %v", err)
+	}
+	w := resp.NewWriter(conn)
+	r := resp.NewReader(conn)
 	
 	for i := 0; i < 1000; i++ {
 		w.Write(resp.NewArray([]resp.Value{resp.NewBulkString([]byte("SET")), resp.NewBulkString([]byte("key" + strconv.Itoa(i))), resp.NewBulkString([]byte("val" + strconv.Itoa(i)))}))
@@ -102,11 +105,11 @@ func main() {
 
 	// 6. Verify data
 	c, _ := net.Dial("tcp", "127.0.0.1:"+newLeaderPort)
-	w = resp.NewWriter(c)
-	r = resp.NewReader(c)
+	wVerify := resp.NewWriter(c)
+	rVerify := resp.NewReader(c)
 	
-	w.Write(resp.NewArray([]resp.Value{resp.NewBulkString([]byte("GET")), resp.NewBulkString([]byte("key999"))}))
-	val, _ := r.Read()
+	wVerify.Write(resp.NewArray([]resp.Value{resp.NewBulkString([]byte("GET")), resp.NewBulkString([]byte("key999"))}))
+	val, _ := rVerify.Read()
 	
 	if string(val.Bulk) == "val999" {
 		log.Println("Zero data loss verified. Key 999 is present.")
