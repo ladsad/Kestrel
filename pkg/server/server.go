@@ -173,11 +173,11 @@ func (s *Server) executeCommandInternal(cmd string, args []resp.Value, writer *r
 		if len(args) < 1 {
 			writer.Write(resp.NewError("ERR wrong number of arguments for 'del' command"))
 		} else {
-			count := 0
-			for _, arg := range args {
-				key := string(arg.Bulk)
-				count += s.store.Del(key)
+			keys := make([]string, len(args))
+			for i, arg := range args {
+				keys[i] = string(arg.Bulk)
 			}
+			count := s.store.MDel(keys)
 			writer.Write(resp.NewInteger(int64(count)))
 		}
 	case "HSET":
