@@ -71,6 +71,30 @@ func (s *Store) HSet(key, field, value string) int {
 	return 1
 }
 
+func (s *Store) HSetMulti(key string, fields, values []string) int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.data[key]; !ok {
+		s.data[key] = make(map[string]string)
+	}
+	hash, ok := s.data[key].(map[string]string)
+	if !ok {
+		return 0 // Wrong type
+	}
+
+	count := 0
+	for i := 0; i < len(fields); i++ {
+		field := fields[i]
+		value := values[i]
+		_, exists := hash[field]
+		hash[field] = value
+		if !exists {
+			count++
+		}
+	}
+	return count
+}
+
 func (s *Store) HGet(key, field string) (string, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

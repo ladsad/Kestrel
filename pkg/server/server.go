@@ -185,12 +185,14 @@ func (s *Server) executeCommandInternal(cmd string, args []resp.Value, writer *r
 			writer.Write(resp.NewError("ERR wrong number of arguments for 'hset' command"))
 		} else {
 			key := string(args[0].Bulk)
-			count := 0
+			numPairs := (len(args) - 1) / 2
+			fields := make([]string, numPairs)
+			vals := make([]string, numPairs)
 			for i := 1; i < len(args); i += 2 {
-				field := string(args[i].Bulk)
-				val := string(args[i+1].Bulk)
-				count += s.store.HSet(key, field, val)
+				fields[(i-1)/2] = string(args[i].Bulk)
+				vals[(i-1)/2] = string(args[i+1].Bulk)
 			}
+			count := s.store.HSetMulti(key, fields, vals)
 			writer.Write(resp.NewInteger(int64(count)))
 		}
 	case "HGET":
