@@ -97,7 +97,7 @@ func (s *Store) HGetAll(key string) []string {
 	if !ok {
 		return nil
 	}
-	var res []string
+	res := make([]string, 0, len(hash)*2)
 	for k, v := range hash {
 		res = append(res, k, v)
 	}
