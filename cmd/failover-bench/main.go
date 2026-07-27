@@ -18,13 +18,13 @@ func main() {
 	exec.Command("powershell", "-Command", "Remove-Item -Recurse -Force data -ErrorAction SilentlyContinue").Run()
 
 	// 1. Start 3 Nodes
-	cmd1 := exec.Command("go", "run", "./cmd/kestrel", "--port", "6380", "--node-id", "node1", "--raft-bind", "127.0.0.1:7380", "--data-dir", "data/node1", "--bootstrap")
+	cmd1 := exec.Command("go", "run", "./cmd/kestrel", "--port", "6380", "--node-idx", "0", "--vsr-bind", "127.0.0.1:7380", "--vsr-peers", "127.0.0.1:7380,127.0.0.1:7381,127.0.0.1:7382", "--data-dir", "data/node1")
 	cmd1.Start()
 	
-	cmd2 := exec.Command("go", "run", "./cmd/kestrel", "--port", "6381", "--node-id", "node2", "--raft-bind", "127.0.0.1:7381", "--data-dir", "data/node2")
+	cmd2 := exec.Command("go", "run", "./cmd/kestrel", "--port", "6381", "--node-idx", "1", "--vsr-bind", "127.0.0.1:7381", "--vsr-peers", "127.0.0.1:7380,127.0.0.1:7381,127.0.0.1:7382", "--data-dir", "data/node2")
 	cmd2.Start()
 	
-	cmd3 := exec.Command("go", "run", "./cmd/kestrel", "--port", "6382", "--node-id", "node3", "--raft-bind", "127.0.0.1:7382", "--data-dir", "data/node3")
+	cmd3 := exec.Command("go", "run", "./cmd/kestrel", "--port", "6382", "--node-idx", "2", "--vsr-bind", "127.0.0.1:7382", "--vsr-peers", "127.0.0.1:7380,127.0.0.1:7381,127.0.0.1:7382", "--data-dir", "data/node3")
 	cmd3.Start()
 	
 	defer func() {
@@ -35,28 +35,9 @@ func main() {
 
 	time.Sleep(3 * time.Second) // Wait for boot and election
 
-	// 2. Join cluster
-	log.Println("Joining nodes to cluster...")
-	conn, err := net.Dial("tcp", "127.0.0.1:6380")
-	if err != nil {
-		log.Fatalf("Failed to connect to leader: %v", err)
-	}
-	
-	w := resp.NewWriter(conn)
-	r := resp.NewReader(conn)
-	
-	w.Write(resp.NewArray([]resp.Value{resp.NewBulkString([]byte("RAFTJOIN")), resp.NewBulkString([]byte("node2")), resp.NewBulkString([]byte("127.0.0.1:7381"))}))
-	r.Read() // Wait for OK
-	
-	w.Write(resp.NewArray([]resp.Value{resp.NewBulkString([]byte("RAFTJOIN")), resp.NewBulkString([]byte("node3")), resp.NewBulkString([]byte("127.0.0.1:7382"))}))
-	r.Read() // Wait for OK
-	
-	conn.Close()
-	log.Println("Cluster joined.")
-	time.Sleep(1 * time.Second)
-
-	// 3. Write data
-	conn, _ = net.Dial("tcp", "127.0.0.1:6380")
+	// 2. Write data (Cluster joins automatically via static peers in VSR)
+	log.Println("Cluster joined. Writing data...")
+	conn, _ := net.Dial("tcp", "127.0.0.1:6380")
 	w = resp.NewWriter(conn)
 	r = resp.NewReader(conn)
 	

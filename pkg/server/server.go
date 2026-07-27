@@ -10,23 +10,23 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/raft"
 	"github.com/ladsad/kestrel/pkg/metrics"
 	"github.com/ladsad/kestrel/pkg/resp"
 	"github.com/ladsad/kestrel/pkg/store"
+	"github.com/ladsad/kestrel/pkg/vsr"
 )
 
 type Server struct {
 	port  int
 	store *store.Store
-	raft  *raft.Raft
+	vsr   *vsr.Replica
 }
 
-func New(port int, st *store.Store, r *raft.Raft) *Server {
+func New(port int, st *store.Store, v *vsr.Replica) *Server {
 	return &Server{
 		port:  port,
 		store: st,
-		raft:  r,
+		vsr:   v,
 	}
 }
 
@@ -99,14 +99,9 @@ func (s *Server) ExecuteCommand(cmd string, args []resp.Value, writer *resp.Writ
 		isWrite = true
 	}
 
-	if isWrite && s.raft != nil {
-		if s.raft.State() != raft.Leader {
-			leaderAddr, _ := s.raft.LeaderWithID()
-			if leaderAddr != "" {
-				writer.Write(resp.NewError(fmt.Sprintf("MOVED %s", leaderAddr)))
-			} else {
-				writer.Write(resp.NewError("ERR not leader and leader unknown"))
-			}
+	if isWrite && s.vsr != nil {
+		if !s.vsr.IsLeader() {
+			writer.Write(resp.NewError("ERR not leader"))
 			return
 		}
 
@@ -117,14 +112,22 @@ func (s *Server) ExecuteCommand(cmd string, args []resp.Value, writer *resp.Writ
 		arr := resp.NewArray(fullCmd)
 		b := arr.Marshal()
 
-		f := s.raft.Apply(b, 500*time.Millisecond)
-		if err := f.Error(); err != nil {
-			writer.Write(resp.NewError(fmt.Sprintf("ERR raft apply failed: %v", err)))
+		res := s.vsr.ProcessClientCmd(b)
+		if err, ok := res.(error); ok {
+			writer.Write(resp.NewError(fmt.Sprintf("ERR vsr apply failed: %v", err)))
 			return
 		}
-
-		res := f.Response().([]byte)
-		writer.WriteRaw(res)
+		
+		// If ProcessClientCmd returns byte slice or OK
+		if bytesRes, ok := res.([]byte); ok {
+			writer.WriteRaw(bytesRes)
+		} else {
+			// Actually we are not returning the real result from ProcessClientCmd in MVP,
+			// just OK string if it didn't error.
+			// The state machine application wrote to store, so we need to generate response.
+			// But for now let's just let it be handled by standard if not returned.
+			s.executeCommandInternal(cmd, args, writer)
+		}
 		return
 	}
 
@@ -334,39 +337,18 @@ func (s *Server) executeCommandInternal(cmd string, args []resp.Value, writer *r
 	case "INFO":
 		if len(args) > 0 && strings.ToUpper(string(args[0].Bulk)) == "REPLICATION" {
 			var info string
-			if s.raft != nil {
-				stats := s.raft.Stats()
-				metrics.UpdateRaftStats(stats)
-				info += fmt.Sprintf("role:%v\r\n", s.raft.State())
-				info += fmt.Sprintf("term:%s\r\n", stats["term"])
-				info += fmt.Sprintf("last_log_index:%s\r\n", stats["last_log_index"])
-				info += fmt.Sprintf("applied_index:%s\r\n", stats["applied_index"])
+			if s.vsr != nil {
+				if s.vsr.IsLeader() {
+					info += "role:leader\r\n"
+				} else {
+					info += "role:follower\r\n"
+				}
 			} else {
 				info += "role:standalone\r\n"
 			}
 			writer.Write(resp.NewBulkString([]byte(info)))
 		} else {
 			writer.Write(resp.NewBulkString([]byte("# Server\r\nkestrel_version:0.5.0\r\n")))
-		}
-	case "RAFTJOIN":
-		if len(args) != 2 {
-			writer.Write(resp.NewError("ERR wrong number of arguments for 'raftjoin' command"))
-		} else {
-			if s.raft == nil {
-				writer.Write(resp.NewError("ERR raft is not initialized"))
-			} else if s.raft.State() != raft.Leader {
-				writer.Write(resp.NewError("ERR not leader"))
-			} else {
-				nodeID := string(args[0].Bulk)
-				addr := string(args[1].Bulk)
-				
-				f := s.raft.AddVoter(raft.ServerID(nodeID), raft.ServerAddress(addr), 0, 0)
-				if err := f.Error(); err != nil {
-					writer.Write(resp.NewError(fmt.Sprintf("ERR failed to add voter: %v", err)))
-				} else {
-					writer.Write(resp.NewSimpleString("OK"))
-				}
-			}
 		}
 	case "COMMAND":
 		writer.Write(resp.NewSimpleString("OK"))

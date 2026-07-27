@@ -40,9 +40,14 @@ Each phase has a hard **exit criteria** — the next phase does not start until 
 - Custom Go load-testing harness ("YCSB-lite").
 - **Exit criteria:** Running a 3-node cluster with the TUI attached, a manual leader kill is visually observable in the dashboard within the measured failover window from docs/BENCHMARKS.md. Comparison matrix in docs/BENCHMARKS.md is fully populated with results from both systems under identical, documented conditions.
 
-## Explicitly Deferred (Future Work)
-- From-scratch Raft implementation (replacing the library) as a post-M4 deep dive
+## Phase 7 — Deferred (Future Work)
 - RESP3 / pub-sub support
 - Multi-datacenter replication
+
+## Phase 8 — Viewstamped Replication (VSR)
+- Replace `hashicorp/raft` with a custom Viewstamped Replication engine
+- Implement deterministic View Change failovers
+- Custom TCP framing for VSR RPCs and optimized AOF log
+- **Exit criteria:** kill the leader in a live 3-node cluster; measure time-to-new-leader and time-to-writes-resumed; verify p99 latency spikes are tighter than Phase 4 (Raft) benchmarks.
 
 Full rationale for scoping decisions lives in [`DESIGN.md §8 Alternatives Considered`](DESIGN.md#8-alternatives-considered).

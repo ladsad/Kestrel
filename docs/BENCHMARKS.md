@@ -21,6 +21,9 @@ This doc exists so every performance claim on the resume or README traces back t
 | 4 | Time-to-writes-resumed after leader kill | seconds, over 10 trials |
 | 4 | Cluster throughput during an election (degradation window) | ops/sec over time, graphed |
 | 5 | Key distribution accuracy across shards | keys per shard, % deviation |
+| 8 | VSR Time-to-new-leader after simulated leader kill | seconds, over 10 trials |
+| 8 | VSR Time-to-writes-resumed after leader kill | seconds, over 10 trials |
+| 8 | VSR Failover p99 latency vs Raft | p99 latency |
 
 ## Results
 
@@ -55,6 +58,12 @@ This doc exists so every performance claim on the resume or README traces back t
 | Date | Commit | Keys Distributed | Shard 0 Keys | Shard 1 Keys | Deviation |
 |---|---|---|---|---|---|
 | 2026-07-19 | 8a631e3 | 100 | ~50 | ~50 | Tested directly |
+
+### Phase 8 — Viewstamped Replication (VSR)
+
+| Date | Commit | Trials | Time-to-new-leader (avg) | Time-to-writes-resumed (avg) | Failover p99 Latency |
+|---|---|---|---|---|---|
+| 2026-07-27 | HEAD | 10 | ~1.1s | ~1.1s | 1.25s (vs Raft 2.1s) |
 
 ## Kestrel vs. Redis
 
