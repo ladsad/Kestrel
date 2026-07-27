@@ -34,6 +34,19 @@ func (s *Store) Del(key string) int {
 	return 0
 }
 
+func (s *Store) MDel(keys []string) int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	count := 0
+	for _, key := range keys {
+		if _, ok := s.data[key]; ok {
+			delete(s.data, key)
+			count++
+		}
+	}
+	return count
+}
+
 // Strings
 func (s *Store) Set(key, value string) {
 	s.mu.Lock()
