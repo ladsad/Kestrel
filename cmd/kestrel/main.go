@@ -24,14 +24,20 @@ func main() {
 	dataDir := flag.String("data-dir", "data", "Directory to store Raft data")
 	bootstrap := flag.Bool("bootstrap", false, "Bootstrap a new cluster")
 	metricsPort := flag.Int("metrics-port", 9090, "Port to expose Prometheus metrics")
+	readConsistency := flag.String("read-consistency", string(server.ReadConsistencyStrong), "Read consistency mode: strong or eventual")
 	flag.Parse()
+
+	consistencyMode, err := server.ParseReadConsistency(*readConsistency)
+	if err != nil {
+		log.Fatalf("Invalid --read-consistency flag: %v", err)
+	}
 
 	// 1. Initialize Store
 	st := store.New()
 
 	// 2. We need an Execute callback for FSM that avoids writing to network
 	// We'll create the server first with a dummy raft pointer, then set it
-	srv := server.New(*port, st, nil)
+	srv := server.New(*port, st, nil, consistencyMode)
 	
 	fsmExec := func(cmd string, args []resp.Value) interface{} {
 		return srv.ApplyCommand(cmd, args)
@@ -39,13 +45,14 @@ func main() {
 	fsm := raftfsm.NewStoreFSM(st, fsmExec)
 
 	// 3. Initialize Raft
-	r, err := consensus.SetupRaft(filepath.Join(*dataDir, *nodeID), *nodeID, *raftBind, fsm)
+	r, pt, err := consensus.SetupRaft(filepath.Join(*dataDir, *nodeID), *nodeID, *raftBind, fsm)
 	if err != nil {
 		log.Fatalf("Failed to initialize Raft: %v", err)
 	}
 
 	// 4. Update Server with Raft
-	srv = server.New(*port, st, r)
+	srv = server.New(*port, st, r, consistencyMode)
+	srv.SetPartitionController(pt)
 
 	if *bootstrap {
 		configuration := raft.Configuration{
