@@ -8,6 +8,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/hashicorp/raft"
@@ -16,18 +17,74 @@ import (
 	"github.com/ladsad/kestrel/pkg/store"
 )
 
-type Server struct {
-	port  int
-	store *store.Store
-	raft  *raft.Raft
+// ReadConsistency controls whether read commands require Raft leader verification.
+type ReadConsistency string
+
+const (
+	ReadConsistencyStrong   ReadConsistency = "strong"
+	ReadConsistencyEventual ReadConsistency = "eventual"
+)
+
+// ParseReadConsistency validates and normalizes a read consistency mode string.
+func ParseReadConsistency(raw string) (ReadConsistency, error) {
+	switch ReadConsistency(strings.ToLower(strings.TrimSpace(raw))) {
+	case ReadConsistencyStrong:
+		return ReadConsistencyStrong, nil
+	case ReadConsistencyEventual:
+		return ReadConsistencyEventual, nil
+	default:
+		return "", fmt.Errorf("invalid read consistency %q: must be 'strong' or 'eventual'", raw)
+	}
 }
 
-func New(port int, st *store.Store, r *raft.Raft) *Server {
-	return &Server{
+// PartitionController toggles Raft network isolation for fault-injection testing.
+type PartitionController interface {
+	SetPartitioned(partitioned bool)
+	IsPartitioned() bool
+}
+
+type Server struct {
+	port        int
+	store       *store.Store
+	raft        *raft.Raft
+	partition   PartitionController
+	consistency atomic.Value
+}
+
+func New(port int, st *store.Store, r *raft.Raft, consistency ReadConsistency) *Server {
+	if consistency == "" {
+		consistency = ReadConsistencyStrong
+	}
+	s := &Server{
 		port:  port,
 		store: st,
 		raft:  r,
 	}
+	s.consistency.Store(consistency)
+	return s
+}
+
+// Consistency returns the active read consistency mode.
+func (s *Server) Consistency() ReadConsistency {
+	if v := s.consistency.Load(); v != nil {
+		return v.(ReadConsistency)
+	}
+	return ReadConsistencyStrong
+}
+
+// SetConsistency updates the server's read consistency mode after validation.
+func (s *Server) SetConsistency(c ReadConsistency) error {
+	parsed, err := ParseReadConsistency(string(c))
+	if err != nil {
+		return err
+	}
+	s.consistency.Store(parsed)
+	return nil
+}
+
+// SetPartitionController attaches a transport partition controller for fault injection.
+func (s *Server) SetPartitionController(pc PartitionController) {
+	s.partition = pc
 }
 
 func (s *Server) Start() error {
@@ -89,35 +146,87 @@ func (s *Server) ApplyCommand(cmd string, args []resp.Value) []byte {
 	return buf.Bytes()
 }
 
+const raftOpTimeout = 500 * time.Millisecond
+
+func isWriteCommand(cmd string) bool {
+	switch cmd {
+	case "SET", "DEL", "HSET", "LPUSH", "RPUSH", "LPOP", "RPOP", "SADD", "ZADD":
+		return true
+	default:
+		return false
+	}
+}
+
+func isReadCommand(cmd string) bool {
+	switch cmd {
+	case "GET", "HGET", "HGETALL", "SMEMBERS", "SISMEMBER", "ZRANGE":
+		return true
+	default:
+		return false
+	}
+}
+
+func (s *Server) writeNotLeaderError(writer *resp.Writer) {
+	leaderAddr, _ := s.raft.LeaderWithID()
+	if leaderAddr != "" {
+		writer.Write(resp.NewError(fmt.Sprintf("MOVED %s", leaderAddr)))
+	} else {
+		writer.Write(resp.NewError("ERR not leader and leader unknown"))
+	}
+}
+
+// ensureLinearizableRead verifies quorum leadership and FSM catch-up before serving a strong read.
+// Returns an empty string on success or a failure reason label on rejection.
+func (s *Server) ensureLinearizableRead(writer *resp.Writer) string {
+	if s.raft.State() != raft.Leader {
+		s.writeNotLeaderError(writer)
+		metrics.RecordReadVerificationFailure("not_leader")
+		return "not_leader"
+	}
+
+	verifyStart := time.Now()
+	err := s.raft.VerifyLeader().Error()
+	metrics.RecordReadVerifyStage("verify_leader", verifyStart)
+	if err != nil {
+		if s.raft.State() != raft.Leader {
+			s.writeNotLeaderError(writer)
+		} else {
+			writer.Write(resp.NewError(fmt.Sprintf("ERR leadership verification failed: %v", err)))
+		}
+		metrics.RecordReadVerificationFailure("verify_leader_error")
+		return "verify_leader_error"
+	}
+
+	barrierStart := time.Now()
+	err = s.raft.Barrier(raftOpTimeout).Error()
+	metrics.RecordReadVerifyStage("barrier", barrierStart)
+	if err != nil {
+		writer.Write(resp.NewError(fmt.Sprintf("ERR raft barrier failed: %v", err)))
+		metrics.RecordReadVerificationFailure("barrier_error")
+		return "barrier_error"
+	}
+
+	return ""
+}
+
 func (s *Server) ExecuteCommand(cmd string, args []resp.Value, writer *resp.Writer) {
 	start := time.Now()
 	defer metrics.RecordCommand(cmd, start)
 
-	var isWrite bool
-	switch cmd {
-	case "SET", "DEL", "HSET", "LPUSH", "RPUSH", "LPOP", "RPOP", "SADD", "ZADD":
-		isWrite = true
-	}
-
-	if isWrite && s.raft != nil {
+	if s.raft != nil && isWriteCommand(cmd) {
 		if s.raft.State() != raft.Leader {
-			leaderAddr, _ := s.raft.LeaderWithID()
-			if leaderAddr != "" {
-				writer.Write(resp.NewError(fmt.Sprintf("MOVED %s", leaderAddr)))
-			} else {
-				writer.Write(resp.NewError("ERR not leader and leader unknown"))
-			}
+			s.writeNotLeaderError(writer)
 			return
 		}
 
 		fullCmd := make([]resp.Value, 0, len(args)+1)
 		fullCmd = append(fullCmd, resp.NewBulkString([]byte(cmd)))
 		fullCmd = append(fullCmd, args...)
-		
+
 		arr := resp.NewArray(fullCmd)
 		b := arr.Marshal()
 
-		f := s.raft.Apply(b, 500*time.Millisecond)
+		f := s.raft.Apply(b, raftOpTimeout)
 		if err := f.Error(); err != nil {
 			writer.Write(resp.NewError(fmt.Sprintf("ERR raft apply failed: %v", err)))
 			return
@@ -125,6 +234,22 @@ func (s *Server) ExecuteCommand(cmd string, args []resp.Value, writer *resp.Writ
 
 		res := f.Response().([]byte)
 		writer.WriteRaw(res)
+		return
+	}
+
+	if isReadCommand(cmd) {
+		mode := "standalone"
+		if s.raft != nil {
+			mode = string(s.Consistency())
+			if mode == string(ReadConsistencyStrong) {
+				if failReason := s.ensureLinearizableRead(writer); failReason != "" {
+					metrics.RecordRead(cmd, mode, failReason, start)
+					return
+				}
+			}
+		}
+		s.executeCommandInternal(cmd, args, writer)
+		metrics.RecordRead(cmd, mode, "ok", start)
 		return
 	}
 
@@ -344,9 +469,54 @@ func (s *Server) executeCommandInternal(cmd string, args []resp.Value, writer *r
 			} else {
 				info += "role:standalone\r\n"
 			}
+			info += fmt.Sprintf("read_consistency:%s\r\n", s.Consistency())
+			if s.partition != nil {
+				info += fmt.Sprintf("raft_partitioned:%t\r\n", s.partition.IsPartitioned())
+			}
 			writer.Write(resp.NewBulkString([]byte(info)))
 		} else {
 			writer.Write(resp.NewBulkString([]byte("# Server\r\nkestrel_version:0.5.0\r\n")))
+		}
+	case "CONSISTENCY":
+		switch len(args) {
+		case 0:
+			writer.Write(resp.NewBulkString([]byte(s.Consistency())))
+		case 1:
+			mode, err := ParseReadConsistency(string(args[0].Bulk))
+			if err != nil {
+				writer.Write(resp.NewError(fmt.Sprintf("ERR %v", err)))
+				return
+			}
+			s.consistency.Store(mode)
+			writer.Write(resp.NewSimpleString("OK"))
+		default:
+			writer.Write(resp.NewError("ERR wrong number of arguments for 'consistency' command"))
+		}
+	case "RAFTPARTITION":
+		if s.partition == nil {
+			writer.Write(resp.NewError("ERR partition control not enabled"))
+			return
+		}
+		switch len(args) {
+		case 0:
+			if s.partition.IsPartitioned() {
+				writer.Write(resp.NewBulkString([]byte("ON")))
+			} else {
+				writer.Write(resp.NewBulkString([]byte("OFF")))
+			}
+		case 1:
+			switch strings.ToUpper(strings.TrimSpace(string(args[0].Bulk))) {
+			case "ON":
+				s.partition.SetPartitioned(true)
+				writer.Write(resp.NewSimpleString("OK"))
+			case "OFF":
+				s.partition.SetPartitioned(false)
+				writer.Write(resp.NewSimpleString("OK"))
+			default:
+				writer.Write(resp.NewError("ERR invalid argument for 'raftpartition': must be ON or OFF"))
+			}
+		default:
+			writer.Write(resp.NewError("ERR wrong number of arguments for 'raftpartition' command"))
 		}
 	case "RAFTJOIN":
 		if len(args) != 2 {
