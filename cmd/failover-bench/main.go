@@ -264,6 +264,7 @@ func runModeBenchmark(binPath, mode string, readersPerNode int, steadyDur, parti
 
 					if val.Type == resp.TypeError {
 						readsRejected.Add(1)
+						time.Sleep(1 * time.Millisecond)
 						continue
 					}
 
