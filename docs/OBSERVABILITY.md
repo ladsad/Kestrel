@@ -27,6 +27,10 @@ Kestrel integrates `prometheus/client_golang` natively to expose a `/metrics` HT
 * `kestrel_raft_state` (Gauge): Tracks 1 for Leader, 0 for Follower.
 * `kestrel_raft_term` (Gauge): Current cluster epoch.
 * `kestrel_raft_last_log_index` / `applied_index` (Gauge): Replication syncing logic.
+* `kestrel_reads_total` (CounterVec, labels: `command`, `mode`, `outcome`): Read operations across `strong`, `eventual`, and `standalone` modes and outcomes (`ok`, `not_leader`, `verify_leader_error`, `barrier_error`).
+* `kestrel_read_duration_seconds` (HistogramVec, labels: `command`, `mode`): Read latency with fine-grained `50µs`–`1s` buckets to isolate `strong` vs. `eventual` tail cost.
+* `kestrel_read_verify_duration_seconds` (HistogramVec, label: `stage`): Splits linearizable read verification overhead into `verify_leader` (`VerifyLeader()`) and `barrier` (`Barrier()`).
+* `kestrel_read_verification_failures_total` (CounterVec, label: `reason`): Counts strong-read rejections (`not_leader`, `verify_leader_error`, `barrier_error`).
 
 **Run the Stack:**
 ```bash

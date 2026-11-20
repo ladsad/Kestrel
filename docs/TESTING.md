@@ -20,8 +20,9 @@ Testing approach per layer, and what "done" means for each. The goal is that eve
 
 ## Replication & Raft (Phase 3–4)
 - Deterministic simulation where feasible: an in-process test harness that can inject network partitions and message delays between simulated nodes.
-- Manual chaos scripts for real-process testing: `scripts/chaos/kill-leader.sh`, `scripts/chaos/partition-network.sh` — documented, repeatable, and run before every milestone sign-off.
-- Explicit test: kill leader mid-write-stream, verify no committed entry is lost and no uncommitted entry is exposed to reads.
+- **Bidirectional Transport Partitioning (`pkg/consensus/partition.go`):** `PartitionableTransport` wraps `raft.Transport` (including cached `AppendPipeline`s, `Consumer()`, and `SetHeartbeatHandler()`) and is toggled via `RAFTPARTITION ON|OFF`, allowing deposed-leader and split-brain read tests over real loopback TCP without OS firewall rules.
+- **Linearizability & Consistency Tests (`pkg/server/server_test.go`, `pkg/consensus/partition_test.go`, `pkg/metrics/metrics_test.go`):** 3-node cluster tests verify follower `-MOVED` rejections in `strong` mode, follower local reads in `eventual` mode, deposed-leader read rejection under `RAFTPARTITION ON`, and recovery after `RAFTPARTITION OFF`.
+- **Dual-Mode Failover & Partition Benchmark (`cmd/failover-bench`):** Drives continuous monotonic-version writes and concurrent multi-node reads while injecting both a leader network partition (`RAFTPARTITION ON`) and a leader process kill (`Process.Kill()`), asserting `0` stale reads (`readVersion >= committedVersionAtReadStart`) in `strong` mode vs. stale reads observed in `eventual` mode.
 - **Visual Validation:** During manual chaos test runs, the TUI dashboard (from Phase 6) should be attached to visually confirm failover dynamics and replication lag in real time. It serves as an active validation tool, not just a cosmetic add-on.
 
 ## Sharding (Phase 5)

@@ -20,6 +20,7 @@ This doc exists so every performance claim on the resume or README traces back t
 | 4 | Time-to-new-leader after simulated leader kill | seconds, over 10 trials |
 | 4 | Time-to-writes-resumed after leader kill | seconds, over 10 trials |
 | 4 | Cluster throughput during an election (degradation window) | ops/sec over time, graphed |
+| 4+ | Linearizable reads (`strong` vs. `eventual`) under leader partition & kill | stale read count, rejected reads, p50/p95/p99 read latency delta |
 | 5 | Key distribution accuracy across shards | keys per shard, % deviation |
 
 ## Results
@@ -56,6 +57,59 @@ This doc exists so every performance claim on the resume or README traces back t
 |---|---|---|---|---|---|
 | 2026-07-19 | 8a631e3 | 100 | ~50 | ~50 | Tested directly |
 
+### Linearizable Reads — Partition & Failover (`eventual` vs. `strong`)
+
+**Environment & Command:**
+- **OS / Arch:** `windows/amd64` (local 3-node loopback cluster, ports `16380-16382` / Raft `17380-17382`)
+- **Go Version:** `go1.26.5`
+- **Base Commit:** `8048f94` (+ `cmd/failover-bench` `1ms` backoff on rejected reads)
+- **Command:** `go run ./cmd/failover-bench` (2s steady-state, 2.5s `RAFTPARTITION ON` on leader, 1.5s heal, 2.5s post-`Process.Kill()` recovery, 2 readers pinned per node = 6 concurrent readers + 1 continuous monotonic writer)
+
+| Mode | Writes OK | Reads OK | Reads Rejected (`MOVED`/Verify) | Stale Reads | Read P50 | Read P95 | Read P99 | Partition Failover | Kill Failover |
+|---|---|---|---|---|---|---|---|---|---|
+| `eventual` | 1,002 | 1,609,551 | 634 | **922,595** | 0s (<500µs) | 524.9µs | 540.4µs | 2.67s | 1.80s |
+| `strong` | 456 | 1,253 | 39,655 | **0** | 10.86ms | 16.36ms | 20.49ms | 3.02s | 1.81s |
+
+**Measured Tradeoff:**
+- Enforcing `VerifyLeader()` + `Barrier()` reduced stale reads from **`922,595` → `0`** across follower lag, network partition of the deposed leader, and leader crash.
+- **P99 Latency Cost:** **`+19.95ms`** (`540.4µs` → `20.49ms`, `37.93x`), driven by the quorum heartbeat RTT and FSM barrier synchronization under concurrent BoltDB writes, plus loss of follower read fan-out (`39,655` follower/deposed-leader reads safely rejected with `-MOVED` / verification errors).
+
+<details>
+<summary>Raw output from <code>go run ./cmd/failover-bench</code></summary>
+
+```text
+--- EVENTUAL Mode Summary ---
+Writes OK:          1002
+Reads OK:           1609551
+Reads Rejected:     634 (MOVED / VerifyLeader errors)
+Read Conn Errors:   562
+Stale Reads:        922595
+Read Latency P50:   0s
+Read Latency P95:   524.9µs
+Read Latency P99:   540.4µs
+Partition Failover: 2.6680131s
+Kill Failover:      1.8028834s
+
+--- STRONG Mode Summary ---
+Writes OK:          456
+Reads OK:           1253
+Reads Rejected:     39655 (MOVED / VerifyLeader errors)
+Read Conn Errors:   564
+Stale Reads:        0
+Read Latency P50:   10.8583ms
+Read Latency P95:   16.3626ms
+Read Latency P99:   20.4947ms
+Partition Failover: 3.024207s
+Kill Failover:      1.8066959s
+
+=== Consistency Comparison (Eventual vs Strong) ===
+Stale Reads:       eventual=922595  |  strong=0
+Read P50 Latency:  eventual=0s  |  strong=10.8583ms
+Read P99 Latency:  eventual=540.4µs  |  strong=20.4947ms  (cost: +19.9543ms, 37.93x)
+```
+
+</details>
+
 ## Kestrel vs. Redis
 
 The purpose of this comparison is not to claim Kestrel "beats" Redis, but to provide a grounded reference point for the numbers. It makes explicit what Kestrel offers out-of-the-box (built-in replication and Raft failover) versus what it gives up (command breadth, years of production hardening, and Redis's deep optimizations).
@@ -80,6 +134,9 @@ The purpose of this comparison is not to claim Kestrel "beats" Redis, but to pro
 ## How to Run
 
 ```bash
-# once Phase 1 lands:
-go run ./cmd/kestrel-bench --host localhost:6380 --conns 50 --mix write:100 --duration 30s
+# Single-node / cluster throughput & latency:
+go run ./cmd/kestrel-bench --host localhost:6380 --conns 50 --duration 30s
+
+# Linearizable reads (eventual vs strong) under partition + leader kill:
+go run ./cmd/failover-bench
 ```

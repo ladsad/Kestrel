@@ -64,10 +64,18 @@ Internal, not client-facing. A follower opens a dedicated TCP connection to the 
 | Command | Args | Returns | Notes |
 |---|---|---|---|
 | `RAFTJOIN` | `node-id bind-address` | `+OK` | Dynamically adds a new voter node to the Raft cluster |
+| `RAFTPARTITION` | `[ON\|OFF]` | bulk string (`ON`/`OFF`) or `+OK` | Toggles bidirectional Raft RPC isolation on the target node for fault-injection testing |
+| `CONSISTENCY` | `[strong\|eventual]` | bulk string or `+OK` | Queries or updates the node's read consistency mode at runtime |
+
+### Read Consistency & MOVED Redirects
+
+- **`strong` (default):** Read commands (`GET`, `HGET`, `HGETALL`, `SMEMBERS`, `SISMEMBER`, `ZRANGE`) execute only on the leader after `VerifyLeader()` + `Barrier()`. Followers return `-MOVED <leader_address>` (or `-ERR not leader and leader unknown`), and a partitioned/deposed leader returns `-ERR leadership verification failed: ...` rather than serving stale state.
+- **`eventual`:** Read commands execute directly against the local in-memory store on any node (leader or follower) with no Raft quorum check.
+- Control commands (`PING`, `ECHO`, `INFO`, `CONSISTENCY`, `RAFTPARTITION`) execute locally on all nodes regardless of mode.
 
 ### MOVED Redirects (Phase 5+)
 
-If a client (or proxy) issues a write command directly to a follower node, the node will refuse the write and instead return a standard Redis-cluster style redirect error:
+If a client (or proxy) issues a write command (or a `strong`-mode read command) directly to a follower node, the node refuses it and returns a Redis-cluster style redirect error:
 `-MOVED <leader_address>\r\n`
 
 The `kestrel-proxy` automatically intercepts this error and seamlessly redirects the connection to the correct leader address on behalf of the client.

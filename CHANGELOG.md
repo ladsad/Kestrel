@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project does not yet follow semantic versioning tags since it's pre-implementation — versioning starts at `v0.1.0` when Phase 1 ships.
 
+## [Unreleased]
+### Added
+- **Configurable Read Consistency (`--read-consistency`, `CONSISTENCY`)**: Supports `strong` (default) and `eventual` modes.
+- **Linearizable Reads**: Enforced `raft.VerifyLeader()` + `raft.Barrier()` on the leader for all read commands (`GET`, `HGET`, `HGETALL`, `SMEMBERS`, `SISMEMBER`, `ZRANGE`) in `strong` mode, rejecting followers with `-MOVED` and partitioned/deposed leaders with verification errors.
+- **Read Consistency Metrics**: Added `kestrel_reads_total`, `kestrel_read_duration_seconds`, `kestrel_read_verify_duration_seconds`, and `kestrel_read_verification_failures_total`.
+- **Partition Fault Injection**: Added `PartitionableTransport` (`pkg/consensus/partition.go`) and `RAFTPARTITION ON|OFF` for bidirectional Raft RPC isolation in tests and benchmarks.
+- **Linearizability Failover Benchmark**: Upgraded `cmd/failover-bench` to inject both leader partition and process kill during active reads/writes, proving `0` stale reads in `strong` mode vs. `922,595` stale reads in `eventual` mode (`+19.95ms` P99 latency cost).
+
 ## [1.0.0] - 2026-07-20
 ### Added
 - Completed Phase 7: Final Benchmarks vs Redis.

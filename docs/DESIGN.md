@@ -117,7 +117,9 @@ This project closes that gap directly and produces defensible, benchmarked claim
 
 - Implement Raft leader election, log replication, and commit-index advancement. Use `hashicorp/raft` as the library **but treat this as a "must be able to explain every RPC and state transition," not "black box dependency."** A from-scratch Raft implementation is considered as a follow-up (see §11).
 - Election timeout, heartbeat interval, and log-matching are configurable and documented.
-- On leader failure (simulated via `kill -9` or network partition via `iptables`/`tc netem`), a follower must be elected and resume accepting writes within a bounded, measured window.
+- **Linearizable Reads (`--read-consistency` / `CONSISTENCY`):** Supports `strong` (default) and `eventual` read modes. Under `strong`, all data reads (`GET`, `HGET`, `HGETALL`, `SMEMBERS`, `SISMEMBER`, `ZRANGE`) reject non-leaders with `-MOVED`, verify quorum leadership via `raft.VerifyLeader()` (preventing stale reads from a partitioned deposed leader before its lease expires), and run `raft.Barrier()` so the local FSM has applied up to the commit index. Under `eventual`, reads execute locally on any node at sub-millisecond latency with bounded staleness.
+- **Partition Fault Injection:** `PartitionableTransport` (`pkg/consensus/partition.go`) wraps the Raft TCP transport to drop both outbound and inbound Raft RPCs when toggled via `RAFTPARTITION ON|OFF`, enabling deterministic testing of partitioned deposed leaders alongside `Process.Kill()`.
+- On leader failure (simulated via `kill -9` or `RAFTPARTITION`), a follower must be elected and resume accepting writes within a bounded, measured window.
 
 **Exit criteria:** kill the leader in a running 3 or 5-node cluster; measure time-to-new-leader and time-to-writes-resumed; verify no committed entry is lost.
 

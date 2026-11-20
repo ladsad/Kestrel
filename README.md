@@ -30,7 +30,7 @@ The purpose of this comparison is to provide a grounded reference point. Kestrel
 
 - **RESP2 Protocol**: Drop-in compatible with standard Redis clients.
 - **Strict Durability**: Backed by BoltDB with a write-ahead log (AOF) and snapshotting for recovery.
-- **Raft Consensus**: Uses HashiCorp's Raft implementation for CP (Consistent/Partition Tolerant) automatic failover and leader elections.
+- **Raft Consensus & Linearizable Reads**: Uses HashiCorp's Raft implementation for CP automatic failover and configurable read consistency (`strong` via `VerifyLeader()` + `Barrier()`, vs. `eventual` local follower reads).
 - **Sharding Layer**: Consistent hashing via a stateless proxy layer for horizontal scaling.
 - **Deep Observability**: Fully instrumented with a Prometheus/Grafana stack and an interactive Bubbletea TUI for real-time cluster monitoring.
 
